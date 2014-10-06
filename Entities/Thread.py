@@ -28,7 +28,7 @@ class Thread:
 		elif db_method == 'vote':
 			return self.vote(html_method, request_body)
 
-		return 'error: unknown thread db_method'
+		return 'error: unknown thread db method'
 
 
 	def list(self, html_method, request_body):

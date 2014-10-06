@@ -20,7 +20,7 @@ class User:
 		elif db_method == 'listFollowing':
 			return self.listFollowing(html_method, request_body)
 
-		return 'error: unknown user db_method'
+		return 'error: unknown user db method'
 
 
 	def create(self, html_method, request_body):

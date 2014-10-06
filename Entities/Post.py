@@ -18,7 +18,7 @@ class Post:
 		elif db_method == 'vote':
 			return self.vote(html_method, request_body)
 
-		return 'error: unknown post db_method'
+		return 'error: unknown post db method'
 
 
 	def list(self, html_method, request_body):

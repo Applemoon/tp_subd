@@ -1,12 +1,11 @@
 from wsgiref.simple_server import make_server, demo_app
-from cgi import parse_qs, escape
 import json
 
-import Database
-import Entities.Forum
-import Entities.Post
-import Entities.User
-import Entities.Thread
+from Database import Database
+from Entities.Forum import Forum
+from Entities.Post import Post
+from Entities.User import User
+from Entities.Thread import Thread
 
 
 def subd_server_app(environ, start_response):
@@ -16,7 +15,6 @@ def subd_server_app(environ, start_response):
 
 	status = '200 OK'
 	headers = [('Content-type', 'application/json')]
-	# headers = [('Content-type', 'text/plain')]
 	start_response(status, headers)
 
 	try:
@@ -65,9 +63,6 @@ httpd.serve_forever()
 
 
 
-# def app(environ, start_response):
-#     path    = environ['PATH_INFO']
-#     method  = environ['REQUEST_METHOD']
 #     if method == 'POST':
 #         if path.startswith('/test'):
 #             try:
@@ -90,10 +85,3 @@ httpd.serve_forever()
 #                     ('Content-Length', str(len(response_body)))]
 #         start_response(status, headers)
 #         return [response_body]
-
-
-
-# try:
-# 	tools.Request('http://%s/db/api/clear' % self.student_ip, {}, post=True).get_response()
-# except Exception, e:
-# 	pass  

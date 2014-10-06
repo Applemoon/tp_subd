@@ -14,7 +14,7 @@ class Forum:
 		elif db_method == 'listUsers':
 			return self.listUsers(html_method, request_body)
 
-		return 'error: unknown forum db_method'
+		return 'error: unknown forum db method'
 
 
 	def create(self, html_method, request_body):
