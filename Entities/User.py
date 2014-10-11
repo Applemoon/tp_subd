@@ -1,8 +1,8 @@
-import Database
+from Database import Database
 
 
 class User:
-	def doMethod(self, db_method, html_method, request_body):
+	def doMethod(self, db_method, html_method, request_body, qs_dict):
 		if db_method == 'create':
 			return self.create(html_method, request_body)
 		elif db_method == 'details':
@@ -30,7 +30,7 @@ class User:
 		# TODO build request using request_body
 		sql = """ """ #TODO
 		db = Database()
-		db.execute(sql, true)
+		db.execute(sql, True)
 		data =  db.cursor.fetchall()
 		return [json.dumps({
     "code": 0,
@@ -38,8 +38,8 @@ class User:
         "date": "2014-01-01 00:00:01",
         "forum": "forum1",
         "id": 1,
-        "isClosed": true,
-        "isDeleted": true,
+        "isClosed": True,
+        "isDeleted": True,
         "message": "hey hey hey hey!",
         "slug": "Threadwithsufficientlylargetitle",
         "title": "Thread With Sufficiently Large Title",
@@ -49,37 +49,37 @@ class User:
 
 	def details(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def follow(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def unfollow(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def listPosts(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def updateProfile(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def listFollowers(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def listFollowing(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 		

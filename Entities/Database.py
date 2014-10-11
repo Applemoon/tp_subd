@@ -22,4 +22,4 @@ class Database:
 		' TRUNCATE TABLE Post;' + \
 		' TRUNCATE TABLE Thread;'
 		data = self.execute(sql)
-		return [json.dumps({"code": 0, "response": "OK"}, separators=(',',':'))]
+		return [json.dumps({"code": 0, "response": "OK"})]

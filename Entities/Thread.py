@@ -1,8 +1,8 @@
-import Database
+from Database import Database
 
 
 class Thread:
-	def doMethod(self, db_method):
+	def doMethod(self, db_method, html_method, request_body, qs_dict):
 		if db_method == 'list':
 			return self.list(html_method, request_body)
 		elif db_method == 'create':
@@ -33,7 +33,7 @@ class Thread:
 
 	def list(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def create(self, html_method, request_body):
@@ -43,7 +43,7 @@ class Thread:
 		# TODO build request using request_body
 		sql = """ """ #TODO
 		db = Database()
-		db.execute(sql, true)
+		db.execute(sql, True)
 		data =  db.cursor.fetchall()
 		return [json.dumps({
     "code": 0,
@@ -51,8 +51,8 @@ class Thread:
         "date": "2014-01-01 00:00:01",
         "forum": "forum1",
         "id": 1,
-        "isClosed": true,
-        "isDeleted": true,
+        "isClosed": True,
+        "isDeleted": True,
         "message": "hey hey hey hey!",
         "slug": "Threadwithsufficientlylargetitle",
         "title": "Thread With Sufficiently Large Title",
@@ -62,49 +62,49 @@ class Thread:
 
 	def details(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def remove(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def open(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def close(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def restore(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def listPosts(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def update(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def subscribe(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def unsubscribe(self, html_method, request_body):
 		# TODO
-		return true
+		return True
 
 
 	def vote(self, html_method, request_body):
 		# TODO
-		return true
+		return True
