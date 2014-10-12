@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id
 	`email` VARCHAR(45) NOT NULL, -- user email
 	`name` VARCHAR(45) NOT NULL, -- user name
+	`username` VARCHAR(45) NOT NULL, -- user name ???
 	`isAnonimous` BOOLEAN NOT NULL DEFAULT 0,
 	`about` TEXT NOT NULL,
 	PRIMARY KEY (`user`),
@@ -59,6 +60,8 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
 	`message` TEXT NOT NULL,
 	`parent` INT NULL DEFAULT NULL, -- parent post id
 	`date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`likes` INT NOT NULL DEFAULT 0,
+	`dislikes` INT NOT NULL DEFAULT 0,
 	`isSpam` BOOLEAN NOT NULL DEFAULT 0,
 	`isEdited` BOOLEAN NOT NULL DEFAULT 0,
 	`isDeleted` BOOLEAN NOT NULL DEFAULT 0,

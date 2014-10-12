@@ -18,7 +18,7 @@ class Post:
 		elif db_method == 'vote':
 			return self.vote(html_method, request_body)
 
-		return 'error: unknown post db method'
+		return [json.dumps({ "code": 3, "response": "Unknown post db method"}, indent=4)]
 
 
 	def list(self, html_method, request_body):
@@ -28,26 +28,10 @@ class Post:
 
 	def create(self, html_method, request_body):
 		if html_method != 'POST':
-			return ['error: wrong html method for "post.create"']
+			return [json.dumps({ "code": 3, "response": "Wrong html method for 'post.create'"}, indent=4)]
 
-		# TODO build request using request_body
-		sql = """ """ #TODO
-		db = Database()
-		db.execute(sql, True)
-		data =  db.cursor.fetchall()
-		return [json.dumps({
-    "code": 0,
-    "response": {
-        "date": "2014-01-01 00:00:01",
-        "forum": "forum1",
-        "id": 1,
-        "isClosed": True,
-        "isDeleted": True,
-        "message": "hey hey hey hey!",
-        "slug": "Threadwithsufficientlylargetitle",
-        "title": "Thread With Sufficiently Large Title",
-        "user": "example3@mail.ru"
-    }}, separators=(',',':'))] #TODO
+		# TODO
+		return True
 
 
 	def details(self, html_method, request_body):
