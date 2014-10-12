@@ -3,19 +3,19 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`email` VARCHAR(45) NOT NULL, -- user email
 	`name` VARCHAR(45) NOT NULL, -- user name
 	`username` VARCHAR(45) NOT NULL, -- user name ???
-	`isAnonimous` BOOLEAN NOT NULL DEFAULT 0,
+	`isAnonymous` BOOLEAN NOT NULL DEFAULT 0,
 	`about` TEXT NOT NULL,
 	PRIMARY KEY (`user`),
 	UNIQUE KEY (`email`)
 );
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Followers` (
-	`first_user` INT NOT NULL, # first user id
-	`second_user` INT NOT NULL, # second user id
-	FOREIGN KEY (`first_user`) REFERENCES `tp_subd`.`User`(`user`)
+	`follower` VARCHAR(45) NOT NULL, -- follower email
+	`following` VARCHAR(45) NOT NULL, -- following email
+	FOREIGN KEY (`follower`) REFERENCES `tp_subd`.`User`(`email`)
 		ON UPDATE CASCADE
 		ON DELETE CASCADE,
-	FOREIGN KEY (`second_user`) REFERENCES `tp_subd`.`User`(`user`)
+	FOREIGN KEY (`following`) REFERENCES `tp_subd`.`User`(`email`)
 		ON UPDATE CASCADE
 		ON DELETE CASCADE
 );
@@ -50,6 +50,17 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 	FOREIGN KEY (`forum`) REFERENCES `tp_subd`.`Forum`(`short_name`)
 		ON UPDATE CASCADE
 		ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Subscription` (
+	`subscriber` VARCHAR(45) NOT NULL, -- subscriber email
+	`thread` INT NOT NULL, -- thread
+	FOREIGN KEY (`subscriber`) REFERENCES `tp_subd`.`User`(`email`)
+		ON UPDATE CASCADE
+		ON DELETE CASCADE,
+	FOREIGN KEY (`thread`) REFERENCES `tp_subd`.`Thread`(`thread`)
+		ON UPDATE CASCADE
+		ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
