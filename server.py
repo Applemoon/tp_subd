@@ -14,7 +14,6 @@ def subd_server_app(environ, start_response):
 	headers = [('Content-type', 'application/json')]
 	start_response(status, headers)
 
-
 	try:
 		request_body_size = int(environ['CONTENT_LENGTH'])
 		request_body = environ['wsgi.input'].read(request_body_size)
@@ -24,14 +23,11 @@ def subd_server_app(environ, start_response):
 	path = environ['PATH_INFO']
 	path_list = path.split('/')
 
-	# http://{{student_ip}}/db/api/{{entity}}/{{method}}/
 	if not path.startswith('/db/api/'):
-		return ['error: url should be like "/db/api/{{entity}}/{{method}}/"']
+		return [json.dumps({ "code": 3, "response": "Url should be like '/db/api/{{entity}}/{{method}}/'"}, indent=4)]
 
-	if len(path_list) < 5:
-		return ['too short url']
-	if path_list[4] == '':
-		return ['too short url']
+	if len(path_list) < 5 or path_list[4] == '':
+		return [json.dumps({ "code": 3, "response": "Too short url"}, indent=4)]
 
 	qs = environ['QUERY_STRING']
 	qs_dict = parse_qs(qs, True);
@@ -53,9 +49,9 @@ def subd_server_app(environ, start_response):
 		db = Database()
 		return db.clear()
 	else:
-		return ['unknown entity']
+		return [json.dumps({ "code": 3, "response": "Unknown entity"}, indent=4)]
 
-	return ['error: 0']
+	return [json.dumps({ "code": 4, "response": "BIG error"}, indent=4)]
 
 
 port = 8000
