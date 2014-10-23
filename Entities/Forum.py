@@ -1,6 +1,6 @@
 import MySQLdb
 import json
-import ast
+from common import *
 
 from Database import Database
 
@@ -23,12 +23,13 @@ class Forum:
 
 	def create(self, html_method, request_body):
 		if html_method != 'POST':
-			return [json.dumps({ "code": 3, "response": "Wrong html method for 'forum.create'"}, indent=4)]
+			return [json.dumps({ "code": 3, "response": "Wrong html method \
+				for 'forum.create'"}, indent=4)]
 
-		request_body = ast.literal_eval(request_body)
-		name = request_body.get('name')
-		short_name = request_body.get('short_name')
-		user = request_body.get('user')
+		request_body = json.loads(request_body)
+		name = request_body.get('name')#.encode('utf-8') TODO
+		short_name = request_body.get('short_name')#.encode('utf-8')
+		user = request_body.get('user')#.encode('utf-8')
 		sql = """INSERT INTO Forum (name, short_name, user) \
 			VALUES ('{name_value}', '{short_name_value}', '{user_value}');""".format( \
 				name_value = name, short_name_value = short_name, user_value = user)
@@ -42,14 +43,15 @@ class Forum:
 		if not data and not data[0]:
 			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 		data = data[0]
-		return [json.dumps({
-			"code": 0,
-			"response": {
-				"id": data[0],
-				"name": name,
-				"short_name": short_name,
-				"user": user
-			}}, indent=4)]
+
+		forum_dict = dict()
+		for field in data:
+			forum_dict["id"] = strToJson(data[0])
+			forum_dict["name"] = strToJson(name)
+			forum_dict["short_name"] = strToJson(short_name)
+			forum_dict["user"] = strToJson(user)
+
+		return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
 
 
 	def details(self, qs_dict):
@@ -75,29 +77,31 @@ class Forum:
 			user_details = user_data[0]
 
 			user = dict()
-			user['about'] = user_details[0]
-			user['email'] = user_details[1]
+			user['about'] = strToJson(user_details[0])
+			user['email'] = strToJson(user_details[1])
 
-			sql = """SELECT follower FROM Followers WHERE following = '{}'""".format(user_details[1])
+			sql = """SELECT follower FROM Follower WHERE following = '{}'""".format( \
+				user_details[1])
 			dbase = Database()
 			data = dbase.execute(sql)
 			data_list = list()
 			for line in data:
 				data_list.append(line[0])
-			user['followers'] = data_list
+			user['followers'] = strToJson(data_list)
 
-			sql = """SELECT following FROM Followers WHERE follower = '{}'""".format(user_details[1])
+			sql = """SELECT following FROM Follower WHERE follower = '{}'""".format( \
+				user_details[1])
 			dbase = Database()
 			data = dbase.execute(sql)
 			data_list = list()
 			for line in data:
 				data_list.append(line[0])
-			user['following'] = data_list
+			user['following'] = strToJson(data_list)
 
-			user['id'] = user_details[2]
-			user['isAnonymous'] = user_details[3]
-			user['name'] = user_details[4]
-			user['username'] = user_details[5]
+			user['id'] = strToJson(user_details[2])
+			user['isAnonymous'] = strToJson(user_details[3], True)
+			user['name'] = strToJson(user_details[4])
+			user['username'] = strToJson(user_details[5])
 
 			sql = """SELECT thread FROM Subscription \
 				WHERE subscriber = '{}'""".format(user_details[1])
@@ -109,10 +113,10 @@ class Forum:
 			user['subscriptions'] = data_list
 		
 		forum_dict = dict()
-		forum_dict['id'] = forum_details[0]
-		forum_dict['name'] = forum_details[1]
-		forum_dict['short_name'] = forum_details[2]
-		forum_dict['user'] = user
+		forum_dict['id'] = strToJson(forum_details[0])
+		forum_dict['name'] = strToJson(forum_details[1])
+		forum_dict['short_name'] = strToJson(forum_details[2])
+		forum_dict['user'] = strToJson(user)
 
 		return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
 		
@@ -168,15 +172,17 @@ class Forum:
 				elif related_value == 'user':
 					user_related = True
 				else:
-					return [json.dumps({ "code": 3, "response": "Wrong related value"}, indent=4)]
+					return [json.dumps({ "code": 3, "response": "Wrong related value"}, \
+						indent=4)]
 
 		sql = """SELECT Post.post, Post.user, Post.thread, Post.forum, Post.message, \
-			Post.parent, Post.date, Post.likes, Post.dislikes, Post.isSpam, Post.isEdited, \
-			Post.isDeleted, Post.isHighlighted, Post.isApproved \
+			Post.parent, Post.date, Post.likes, Post.dislikes, Post.isSpam, \
+			Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved \
 			FROM `tp_subd`.`Post` \
 			JOIN Thread ON Post.thread = Thread.thread \
 			JOIN Forum ON Forum.short_name = Thread.forum \
-			WHERE Forum.short_name = '{short_name_value}' {snc_sql} {lim_sql} {ord_sql} {srt_sql};""".format(
+			WHERE Forum.short_name = '{short_name_value}' {snc_sql} {lim_sql} 
+			{ord_sql} {srt_sql};""".format(
 				short_name_value = qs_dict['forum'][0], \
 				snc_sql = since_sql,
 				lim_sql = limit_sql,
@@ -190,7 +196,7 @@ class Forum:
 		post_list = list()
 		for post in data:
 			post_dict = dict()
-			post_dict['id'] = post[0]
+			post_dict['id'] = strToJson(post[0])
 
 			if user_related:
 				sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
@@ -201,15 +207,15 @@ class Forum:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				user_data = user_data[0]
 				user_dict = dict()
-				user_dict['id'] = user_data[0]
-				user_dict['email'] = user_data[1]
-				user_dict['name'] = user_data[2]
-				user_dict['username'] = user_data[3]
-				user_dict['isAnonymous'] = user_data[4]
-				user_dict['about'] = user_data[5]
-				post_dict['user'] = user_dict
+				user_dict['id'] = strToJson(user_data[0])
+				user_dict['email'] = strToJson(user_data[1])
+				user_dict['name'] = strToJson(user_data[2])
+				user_dict['username'] = strToJson(user_data[3])
+				user_dict['isAnonymous'] = strToJson(user_data[4], True)
+				user_dict['about'] = strToJson(user_data[5])
+				post_dict['user'] = strToJson(user_dict)
 			else:
-				post_dict['user'] = post[1]
+				post_dict['user'] = strToJson(post[1])
 
 			if thread_related:
 				sql = """SELECT thread, title, user, message, forum, isDeleted, \
@@ -221,18 +227,19 @@ class Forum:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				thread_data = thread_data[0]
 				thread_dict = dict()
-				thread_dict['id'] = thread_data[0]
-				thread_dict['title'] = thread_data[1]
-				thread_dict['user'] = thread_data[2]
-				thread_dict['message'] = thread_data[3]
-				thread_dict['forum'] = thread_data[4]
-				thread_dict['isDeleted'] = thread_data[5]
-				thread_dict['isClosed'] = thread_data[6]
-				thread_dict['data'] = thread_data[7].strftime('%Y-%m-%d %H:%M:%S')
-				thread_dict['slug'] = thread_data[8]
-				post_dict['thread'] = thread_dict
+				thread_dict['id'] = strToJson(thread_data[0])
+				thread_dict['title'] = strToJson(thread_data[1])
+				thread_dict['user'] = strToJson(thread_data[2])
+				thread_dict['message'] = strToJson(thread_data[3])
+				thread_dict['forum'] = strToJson(thread_data[4])
+				thread_dict['isDeleted'] = strToJson(thread_data[5], True)
+				thread_dict['isClosed'] = strToJson(thread_data[6], True)
+				time = thread_data[7].strftime('%Y-%m-%d %H:%M:%S')
+				thread_dict['data'] = strToJson(time)
+				thread_dict['slug'] = strToJson(thread_data[8])
+				post_dict['thread'] = strToJson(thread_dict)
 			else:
-				post_dict['thread'] = post[2]
+				post_dict['thread'] = strToJson(post[2])
 
 			if forum_related:
 				sql = """SELECT forum, name, short_name, user FROM Forum \
@@ -243,24 +250,25 @@ class Forum:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				forum_data = forum_data[0]
 				forum_dict = dict()
-				forum_dict['id'] = forum_data[0]
-				forum_dict['name'] = forum_data[1]
-				forum_dict['short_name'] = forum_data[2]
-				forum_dict['user'] = forum_data[3]
-				post_dict['forum'] = forum_dict
+				forum_dict['id'] = strToJson(forum_data[0])
+				forum_dict['name'] = strToJson(forum_data[1])
+				forum_dict['short_name'] = strToJson(forum_data[2])
+				forum_dict['user'] = strToJson(forum_data[3])
+				post_dict['forum'] = strToJson(forum_dict)
 			else:
-				post_dict['forum'] = post[3]
+				post_dict['forum'] = strToJson(post[3])
 
-			post_dict['message'] = post[4]
-			post_dict['parent'] = post[5]
-			post_dict['date'] = post[6].strftime('%Y-%m-%d %H:%M:%S')
-			post_dict['likes'] = post[7]
-			post_dict['dislikes'] = post[8]
-			post_dict['isSpam'] = post[9]
-			post_dict['isEdited'] = post[10]
-			post_dict['isDeleted'] = post[11]
-			post_dict['isHighlighted'] = post[12]
-			post_dict['isApproved'] = post[13]
+			post_dict['message'] = strToJson(post[4])
+			post_dict['parent'] = strToJson(post[5])
+			time = post[6].strftime('%Y-%m-%d %H:%M:%S')
+			post_dict['date'] = strToJson(time)
+			post_dict['likes'] = strToJson(post[7])
+			post_dict['dislikes'] = strToJson(post[8])
+			post_dict['isSpam'] = strToJson(post[9], True)
+			post_dict['isEdited'] = strToJson(post[10], True)
+			post_dict['isDeleted'] = strToJson(post[11], True)
+			post_dict['isHighlighted'] = strToJson(post[12], True)
+			post_dict['isApproved'] = strToJson(post[13], True)
 			post_list.append(post_dict)
 
 		return [json.dumps({ "code": 0, "response": post_list}, indent=4)]
@@ -305,7 +313,8 @@ class Forum:
 				elif related_value == 'user':
 					user_related = True
 				else:
-					return [json.dumps({ "code": 3, "response": "Wrong related value"}, indent=4)]
+					return [json.dumps({ "code": 3, "response": "Wrong related value"}, \
+						indent=4)]
 
 		sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, \
 			date, slug FROM Thread \
@@ -322,8 +331,8 @@ class Forum:
 		thread_list = list()
 		for thread in data:
 			thread_dict = dict()
-			thread_dict['id'] = thread[0]
-			thread_dict['title'] = thread[1]
+			thread_dict['id'] = strToJson(thread[0])
+			thread_dict['title'] = strToJson(thread[1])
 			
 			if user_related:
 				sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
@@ -334,17 +343,17 @@ class Forum:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				user_data = user_data[0]
 				user_dict = dict()
-				user_dict['id'] = user_data[0]
-				user_dict['email'] = user_data[1]
-				user_dict['name'] = user_data[2]
-				user_dict['username'] = user_data[3]
-				user_dict['isAnonymous'] = user_data[4]
-				user_dict['about'] = user_data[5]
-				thread_dict['user'] = user_dict
+				user_dict['id'] = strToJson(user_data[0])
+				user_dict['email'] = strToJson(user_data[1])
+				user_dict['name'] = strToJson(user_data[2])
+				user_dict['username'] = strToJson(user_data[3])
+				user_dict['isAnonymous'] = strToJson(user_data[4], True)
+				user_dict['about'] = strToJson(user_data[5])
+				thread_dict['user'] = strToJson(user_dict)
 			else:
-				thread_dict['user'] = thread[2]
+				thread_dict['user'] = strToJson(thread[2])
 
-			thread_dict['message'] = thread[3]
+			thread_dict['message'] = strToJson(thread[3])
 
 			if forum_related:
 				sql = """SELECT forum, name, short_name, user FROM Forum \
@@ -355,18 +364,19 @@ class Forum:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				forum_data = forum_data[0]
 				forum_dict = dict()
-				forum_dict['id'] = forum_data[0]
-				forum_dict['name'] = forum_data[1]
-				forum_dict['short_name'] = forum_data[2]
-				forum_dict['user'] = forum_data[3]
-				thread_dict['forum'] = forum_dict
+				forum_dict['id'] = strToJson(forum_data[0])
+				forum_dict['name'] = strToJson(forum_data[1])
+				forum_dict['short_name'] = strToJson(forum_data[2])
+				forum_dict['user'] = strToJson(forum_data[3])
+				thread_dict['forum'] = strToJson(forum_dict)
 			else:
-				thread_dict['forum'] = thread[4]
+				thread_dict['forum'] = strToJson(thread[4])
 
-			thread_dict['isDeleted'] = thread[5]
-			thread_dict['isClosed'] = thread[6]
-			thread_dict['date'] = thread[7].strftime('%Y-%m-%d %H:%M:%S')
-			thread_dict['slug'] = thread[8]
+			thread_dict['isDeleted'] = strToJson(thread[5], True)
+			thread_dict['isClosed'] = strToJson(thread[6], True)
+			time = thread[7].strftime('%Y-%m-%d %H:%M:%S')
+			thread_dict['date'] = strToJson(time)
+			thread_dict['slug'] = strToJson(thread[8])
 			thread_list.append(thread_dict)
 
 		return [json.dumps({ "code": 0, "response": thread_list}, indent=4)]
@@ -383,7 +393,8 @@ class Forum:
 			try:
 				since_id = int(since_id)
 			except ValueError:
-				return [json.dumps({ "code": 3, "response": "Wrong since_id value"}, indent=4)]
+				return [json.dumps({ "code": 3, "response": "Wrong since_id value"}, \
+					indent=4)]
 			since_id_sql = """AND User.user >= '{}'""".format(since_id)
 
 		# Limit part
