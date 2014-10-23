@@ -1,3 +1,7 @@
+------------------
+-- foreigh keys --
+------------------
+
 CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id
 	`email` VARCHAR(45) NOT NULL, -- user email
@@ -9,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	UNIQUE KEY (`email`)
 );
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Followers` (
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Follower` (
 	`follower` VARCHAR(45) NOT NULL, -- follower email
 	`following` VARCHAR(45) NOT NULL, -- following email
 	FOREIGN KEY (`follower`) REFERENCES `tp_subd`.`User`(`email`)
@@ -54,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Subscription` (
 	`subscriber` VARCHAR(45) NOT NULL, -- subscriber email
-	`thread` INT NOT NULL, -- thread
+	`thread` INT NOT NULL, -- thread id
 	FOREIGN KEY (`subscriber`) REFERENCES `tp_subd`.`User`(`email`)
 		ON UPDATE CASCADE
 		ON DELETE CASCADE,
@@ -90,7 +94,94 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
 		ON DELETE RESTRICT
 );
 
+SET FOREIGN_KEY_CHECKS=0;
 TRUNCATE TABLE `tp_subd`.`Forum`;
 TRUNCATE TABLE `tp_subd`.`User`;
 TRUNCATE TABLE `tp_subd`.`Post`;
-TRUNCATE TABLE `tp_subd`.`Thread `;
+TRUNCATE TABLE `tp_subd`.`Thread`;
+TRUNCATE TABLE `tp_subd`.`Follower`;
+TRUNCATE TABLE `tp_subd`.`Subscription`;
+SET FOREIGN_KEY_CHECKS=1;
+
+
+
+---------------------
+-- no foreigh keys --
+---------------------
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
+	`user` INT NOT NULL AUTO_INCREMENT, -- user id
+	`email` VARCHAR(45) NOT NULL, -- user email
+	`name` VARCHAR(45) NOT NULL, -- user name
+	`username` VARCHAR(45) NOT NULL, -- user name ???
+	`isAnonymous` BOOLEAN NOT NULL DEFAULT 0,
+	`about` TEXT NOT NULL,
+	PRIMARY KEY (`user`),
+	UNIQUE KEY (`email`)
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Follower` (
+	`follower` VARCHAR(45) NOT NULL, -- follower email
+	`following` VARCHAR(45) NOT NULL -- following email
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Forum` (
+	`forum` INT NOT NULL AUTO_INCREMENT, -- forum id
+	`name` VARCHAR(45) NOT NULL, -- forum full name
+	`short_name` VARCHAR(45) NOT NULL, -- forum short name
+	`user` VARCHAR(45) NOT NULL, -- founder email
+	PRIMARY KEY (`forum`),
+	UNIQUE KEY (`name`), 
+	UNIQUE KEY (`short_name`)
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
+	`thread` INT NOT NULL AUTO_INCREMENT, -- thread id
+	`title` VARCHAR(45) NOT NULL, -- thread title
+	`user` VARCHAR(45) NOT NULL, -- founder email
+	`message` TEXT NOT NULL,
+	`forum` VARCHAR(45) NOT NULL, -- parent forum short_name
+	`isDeleted` BOOLEAN NOT NULL DEFAULT 0,
+	`isClosed` BOOLEAN NOT NULL DEFAULT 0,
+	`date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`slug` VARCHAR(45) NOT NULL, -- ???????
+	PRIMARY KEY (`thread`)
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Subscription` (
+	`subscriber` VARCHAR(45) NOT NULL, -- subscriber email
+	`thread` INT NOT NULL -- thread id
+);
+
+CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
+	`post` INT NOT NULL AUTO_INCREMENT, -- post id
+	`user` VARCHAR(45) NOT NULL, -- author email
+	`thread` INT NOT NULL, -- thread id
+	`forum` VARCHAR(45) NOT NULL, -- forum short_name
+	`message` TEXT NOT NULL,
+	`parent` INT NULL DEFAULT NULL, -- parent post id
+	`date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`likes` INT NOT NULL DEFAULT 0,
+	`dislikes` INT NOT NULL DEFAULT 0,
+	`isSpam` BOOLEAN NOT NULL DEFAULT 0,
+	`isEdited` BOOLEAN NOT NULL DEFAULT 0,
+	`isDeleted` BOOLEAN NOT NULL DEFAULT 0,
+	`isHighlighted` BOOLEAN NOT NULL DEFAULT 0,
+	`isApproved` BOOLEAN NOT NULL DEFAULT 0,
+	PRIMARY KEY (`post`)
+);
+
+TRUNCATE TABLE `tp_subd`.`Forum`;
+TRUNCATE TABLE `tp_subd`.`User`;
+TRUNCATE TABLE `tp_subd`.`Post`;
+TRUNCATE TABLE `tp_subd`.`Thread`;
+TRUNCATE TABLE `tp_subd`.`Follower`;
+TRUNCATE TABLE `tp_subd`.`Subscription`;
+
+
+
+# Вопросы
+# Что такое slug?
+# Нужны ли FOREIGN KEY'и?
+# Как исправить UnicodeEncodeError: 'ascii' codec can't encode characters
+# in position 0-4: ordinal not in range(128)
