@@ -24,7 +24,13 @@ def subd_server_app(environ, start_response):
 	path_list = path.split('/')
 
 	if not path.startswith('/db/api/'):
-		return [json.dumps({ "code": 3, "response": "Url should be like '/db/api/{{entity}}/{{method}}/'"}, indent=4)]
+		return [json.dumps({ "code": 3, 
+			"response": "Url should be like \'/db/api/{{entity}}/{{method}}/'"}, 
+			indent=4)]
+
+	if path_list[3].lower() == 'clear':
+		db = Database()
+		return db.clear()
 
 	if len(path_list) < 5 or path_list[4] == '':
 		return [json.dumps({ "code": 3, "response": "Too short url"}, indent=4)]
@@ -45,9 +51,6 @@ def subd_server_app(environ, start_response):
 	elif path_list[3].lower() == 'thread':
 		thread = Thread()
 		return thread.doMethod(db_method, html_method, request_body, qs_dict)
-	elif path_list[3].lower() == 's.stupnikov' and path_list[4].lower() == 'clear':
-		db = Database()
-		return db.clear()
 	else:
 		return [json.dumps({ "code": 3, "response": "Unknown entity"}, indent=4)]
 
