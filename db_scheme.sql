@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 	`isClosed` BOOLEAN NOT NULL DEFAULT 0,
 	`date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`slug` VARCHAR(45) NOT NULL, -- ???????
+	`likes` INT NOT NULL DEFAULT 0,
+	`dislikes` INT NOT NULL DEFAULT 0,
+	`points` INT NOT NULL DEFAULT 0,  -- ???????
 	PRIMARY KEY (`thread`),
 	FOREIGN KEY (`user`) REFERENCES `tp_subd`.`User`(`email`)
 		ON UPDATE CASCADE
@@ -118,12 +121,12 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`about` TEXT NOT NULL,
 	PRIMARY KEY (`user`),
 	UNIQUE KEY (`email`)
-);
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Follower` (
 	`follower` VARCHAR(45) NOT NULL, -- follower email
 	`following` VARCHAR(45) NOT NULL -- following email
-);
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Forum` (
 	`forum` INT NOT NULL AUTO_INCREMENT, -- forum id
@@ -133,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Forum` (
 	PRIMARY KEY (`forum`),
 	UNIQUE KEY (`name`), 
 	UNIQUE KEY (`short_name`)
-);
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 	`thread` INT NOT NULL AUTO_INCREMENT, -- thread id
@@ -145,13 +148,17 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 	`isClosed` BOOLEAN NOT NULL DEFAULT 0,
 	`date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`slug` VARCHAR(45) NOT NULL, -- ???????
-	PRIMARY KEY (`thread`)
-);
+	`likes` INT NOT NULL DEFAULT 0,
+	`dislikes` INT NOT NULL DEFAULT 0,
+	`points` INT NOT NULL DEFAULT 0,  -- ???????
+	PRIMARY KEY (`thread`),
+	UNIQUE KEY (`title`)
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Subscription` (
 	`subscriber` VARCHAR(45) NOT NULL, -- subscriber email
 	`thread` INT NOT NULL -- thread id
-);
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
 	`post` INT NOT NULL AUTO_INCREMENT, -- post id
@@ -169,7 +176,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
 	`isHighlighted` BOOLEAN NOT NULL DEFAULT 0,
 	`isApproved` BOOLEAN NOT NULL DEFAULT 0,
 	PRIMARY KEY (`post`)
-);
+) DEFAULT CHARSET=utf8;
 
 TRUNCATE TABLE `tp_subd`.`Forum`;
 TRUNCATE TABLE `tp_subd`.`User`;
@@ -179,9 +186,11 @@ TRUNCATE TABLE `tp_subd`.`Follower`;
 TRUNCATE TABLE `tp_subd`.`Subscription`;
 
 
+-----------
+-- Other --
+-----------
+DROP TABLE Forum, Post, Subscription, Thread, User, Follower;
 
 # Вопросы
-# Что такое slug?
-# Нужны ли FOREIGN KEY'и?
-# Как исправить UnicodeEncodeError: 'ascii' codec can't encode characters
-# in position 0-4: ordinal not in range(128)
+# Что такое slug у Thread?
+# Что такое points у Thread?

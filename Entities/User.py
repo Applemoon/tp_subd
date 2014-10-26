@@ -34,8 +34,10 @@ class User:
 
 		request_body = json.loads(request_body)
 		username = request_body.get('username')
+		username = tryEncode(username)
 		about = request_body.get('about')
 		name = request_body.get('name')
+		name = tryEncode(name)
 		email = request_body.get('email')
 		isAnonymousKey = request_body.get('isAnonymous', False)
 		if isAnonymousKey:
@@ -44,7 +46,7 @@ class User:
 			isAnonymous = 0
 		sql = """INSERT INTO User (username, about, name, email, isAnonymous) \
 			VALUES ('{username_value}', '{about_value}', \
-			'{name_value}', '{email_value}', '{isAnonymous_value}');""".format( \
+			'{name_value}', '{email_value}', {isAnonymous_value});""".format( \
 			username_value = username, about_value = about, name_value = name, 
 			email_value = email, isAnonymous_value = isAnonymous)
 		db = Database()
@@ -60,11 +62,13 @@ class User:
 				return [json.dumps({ "code": 4, 
 					"response": "Oh, we have some realy bad error"}, indent=4)]
 
-		sql = """SELECT user FROM `tp_subd`.`User` \
+		sql = """SELECT user FROM User \
 			WHERE email = '{email_value}';""".format(email_value = email);
 		db2 = Database()
 		data = db2.execute(sql)
-		if not data and not data[0]:
+		if not data:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+		if not data[0]:
 			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 		data = data[0]
 		

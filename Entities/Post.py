@@ -8,7 +8,7 @@ class Post:
 		elif db_method == 'create':
 			return self.create(html_method, request_body)
 		elif db_method == 'details':
-			return self.details(html_method, request_body)
+			return self.details(qs_dict)
 		elif db_method == 'remove':
 			return self.remove(html_method, request_body)
 		elif db_method == 'restore':
@@ -34,7 +34,7 @@ class Post:
 		return True
 
 
-	def details(self, html_method, request_body):
+	def details(self, qs_dict):
 		# TODO
 		return True
 

@@ -5,7 +5,7 @@ import json
 class Database:
 	def __init__(self):
 		self.db = MySQLdb.connect(host="localhost", user="root", passwd="1", 
-			db="tp_subd", charset='utf8')
+			db="tp_subd", use_unicode=1, charset='utf8')
 		self.cursor = self.db.cursor()
 		
 

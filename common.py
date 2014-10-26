@@ -10,3 +10,9 @@ def strToJson(value, isBool=False):
 
 	return value
 		
+
+def tryEncode(value):
+	if value != None:
+		return value.encode('utf-8')
+
+	return value
