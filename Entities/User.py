@@ -58,28 +58,12 @@ class User:
 			if errorcode == MYSQL_DUPLICATE_ENTITY_ERROR:
 				return [json.dumps({ "code": 5, 
 					"response": "This user already exists"}, indent=4)]
+				# TODO doesn't work
 			else:
 				return [json.dumps({ "code": 4, 
 					"response": "Oh, we have some realy bad error"}, indent=4)]
 
-		sql = """SELECT user FROM User \
-			WHERE email = '{email_value}';""".format(email_value = email);
-		db2 = Database()
-		data = db2.execute(sql)
-		if not data:
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-		if not data[0]:
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-		data = data[0]
-		
-		user_dict = dict()
-		for field in data:
-			user_dict["about"] = strToJson(about)
-			user_dict["email"] = strToJson(email)
-			user_dict["id"] = strToJson(data[0])
-			user_dict["isAnonymous"] = strToJson(isAnonymous, True)
-			user_dict["name"] = strToJson(name)
-			user_dict["username"] = strToJson(username)
+		user_dict = getUserDict(email)
 
 		return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 
@@ -89,21 +73,7 @@ class User:
 			return [json.dumps({ "code": 2, "response": "No 'user' key"}, indent=4)]
 
 		email = qs_dict['user'][0]
-		sql = """SELECT user, name, username, email, about, isAnonymous FROM User \
-			WHERE email = '{}';""".format(email)
-		dbase = Database()		
-		data = dbase.execute(sql)
-		if not data:
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-
-		user_details = data[0]
-		user_dict = dict()
-		user_dict['id'] = strToJson(user_details[0])
-		user_dict['name'] = strToJson(user_details[1])
-		user_dict['username'] = strToJson(user_details[2])
-		user_dict['email'] = strToJson(user_details[3])
-		user_dict['about'] = strToJson(user_details[4])
-		user_dict['isAnonymous'] = strToJson(user_details[5], True)
+		user_dict = getUserDict(email)
 
 		sql = """SELECT follower FROM Follower WHERE following = '{}';""".format(email)
 		dbase = Database()		
@@ -116,7 +86,7 @@ class User:
 		user_dict['following'] = following_list
 
 		sql = """SELECT Subscription.thread FROM Subscription \
-			JOIN Thread ON Thread.thread = Subscription.thread
+			JOIN Thread USING(thread)
 			WHERE Subscription.subscriber = '{}';""".format(email)
 		dbase = Database()		
 		subscriptions_list = dbase.execute(sql)

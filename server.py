@@ -25,7 +25,7 @@ def subd_server_app(environ, start_response):
 
 	if not path.startswith('/db/api/'):
 		return [json.dumps({ "code": 3, 
-			"response": "Url should be like \'/db/api/{{entity}}/{{method}}/'"}, 
+			"response": "Url should be like \'/db/api/{{entity}}/{{method}}/\'"}, 
 			indent=4)]
 
 	if path_list[3].lower() == 'clear':
