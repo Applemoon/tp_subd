@@ -1,6 +1,6 @@
 import json
 
-from Database import Database
+from MyDatabase import MyDatabase
 from common import *
 
 
@@ -77,34 +77,24 @@ class Post:
 
 		sql = """INSERT INTO Post (user, thread, forum, message, parent, date, isSpam, \
 			isEdited, isDeleted, isHighlighted, isApproved) \
-			VALUES ('{user_value}', '{thread_value}', '{forum_value}', '{message_value}', \
-			'{parent_value}', '{date_value}', '{isSpam_value}', '{isEdited_value}', \
-			'{isDeleted_value}', '{isHighlighted_value}', '{isApproved_value}') \
-			;""".format(user_value = user, thread_value = thread, forum_value = forum,
-				message_value = message, parent_value = parent, date_value = date, 
-				isSpam_value = isSpam, isEdited_value = isEdited, 
-				isDeleted_value = isDeleted, isHighlighted_value = isHighlighted, 
-				isApproved_value = isApproved)
-		db = Database()
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
+		args = (user, thread, forum, message, parent, date, isSpam, isEdited, 
+				isDeleted, isHighlighted, isApproved)
 
+		db = MyDatabase()
+		
 		try :
-			db.execute(sql, True)
+			db.execute(sql, args, True)
 		except MySQLdb.IntegrityError, message:
-			errorcode = message[0]
-			if errorcode == MYSQL_DUPLICATE_ENTITY_ERROR:
-				return [json.dumps({ "code": 5, 
-					"response": "This post already exists"}, indent=4)]
-			else:
-				return [json.dumps({ "code": 4, 
-					"response": "Oh, we have some realy bad error"}, indent=4)]
+			print message[0]
+		finally:
+			post_list = getPostList(id = db.cursor.lastrowid)
+			if post_list == list():
+				return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+			if not post_list[0]:
+				return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 
-		post_list = getPostList(user, date)
-		if post_list == list():
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-		if not post_list[0]:
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-
-		return [json.dumps({"code": 0, "response": post_list[0]}, indent=4)]
+			return [json.dumps({"code": 0, "response": post_list[0]}, indent=4)]
 
 
 	def details(self, qs_dict):

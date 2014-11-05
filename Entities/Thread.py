@@ -1,7 +1,7 @@
 import MySQLdb
 import json
 
-from Database import Database
+from MyDatabase import MyDatabase
 from common import *
 
 
@@ -72,31 +72,20 @@ class Thread:
 			isDeleted = 0
 
 		sql = """INSERT INTO Thread (forum, title, isClosed, user, date, \
-			message, slug, isDeleted) \
-			VALUES ('{forum_value}', '{title_value}', {isClosed_value}, '{user_value}', \
-			'{date_value}', '{message_value}', '{slug_value}', \
-			{isDeleted_value});""".format( \
-				forum_value = forum, title_value = title, isClosed_value = isClosed, 
-				user_value = user, date_value = date, message_value = message, 
-				slug_value = slug, isDeleted_value = isDeleted)
-		db = Database()
+			message, slug, isDeleted) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"""
+		args = (forum, title, isClosed, user, date, message, slug, isDeleted) 
+		db = MyDatabase()
 
 		try :
-			db.execute(sql, True)
+			db.execute(sql, args, True)
 		except MySQLdb.IntegrityError, message:
-			errorcode = message[0]
-			if errorcode == MYSQL_DUPLICATE_ENTITY_ERROR:
-				return [json.dumps({ "code": 5, 
-					"response": "This thread already exists"}, indent=4)]
-			else:
-				return [json.dumps({ "code": 4, 
-					"response": "Oh, we have some realy bad error"}, indent=4)]
+			print message[0]
+		finally:
+			thread_list = getThreadList(title = title)
+			if thread_list == list():
+				return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 
-		thread_list = getThreadList(title = title)
-		if thread_list == list():
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-
-		return [json.dumps({"code": 0, "response": thread_list[0]}, indent=4)]
+			return [json.dumps({"code": 0, "response": thread_list[0]}, indent=4)]
 
 
 	def details(self, qs_dict):

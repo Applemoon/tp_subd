@@ -2,7 +2,7 @@ from wsgiref.simple_server import make_server, demo_app
 from urlparse import urlparse, parse_qs
 import json
 
-from Entities.Database import Database
+from Entities.MyDatabase import MyDatabase
 from Entities.Forum import Forum
 from Entities.Post import Post
 from Entities.User import User
@@ -29,7 +29,7 @@ def subd_server_app(environ, start_response):
 			indent=4)]
 
 	if path_list[3].lower() == 'clear':
-		db = Database()
+		db = MyDatabase()
 		return db.clear()
 
 	if len(path_list) < 5 or path_list[4] == '':

@@ -1,7 +1,7 @@
 import MySQLdb
 import json
 
-from Database import Database
+from MyDatabase import MyDatabase
 from common import *
 
 
@@ -45,20 +45,17 @@ class User:
 		else:
 			isAnonymous = 0
 		sql = """INSERT INTO User (username, about, name, email, isAnonymous) \
-			VALUES ('{username_value}', '{about_value}', \
-			'{name_value}', '{email_value}', {isAnonymous_value});""".format( \
-			username_value = username, about_value = about, name_value = name, 
-			email_value = email, isAnonymous_value = isAnonymous)
-		db = Database()
+			VALUES (%s, %s, %s, %s, %s);"""
+		args = (username, about, name, email, isAnonymous)
+		db = MyDatabase()
 
 		try :
-			db.execute(sql, True)
+			db.execute(sql, args, True)
 		except MySQLdb.IntegrityError, message:
 			errorcode = message[0]
 			if errorcode == MYSQL_DUPLICATE_ENTITY_ERROR:
 				return [json.dumps({ "code": 5, 
 					"response": "This user already exists"}, indent=4)]
-				# TODO doesn't work
 			else:
 				return [json.dumps({ "code": 4, 
 					"response": "Oh, we have some realy bad error"}, indent=4)]
@@ -75,21 +72,23 @@ class User:
 		email = qs_dict['user'][0]
 		user_dict = getUserDict(email)
 
-		sql = """SELECT follower FROM Follower WHERE following = '{}';""".format(email)
-		dbase = Database()		
-		followers_list = dbase.execute(sql)
+		sql = """SELECT follower FROM Follower WHERE following = %s;"""
+		args = (email)
+		dbase = MyDatabase()		
+		followers_list = dbase.execute(sql, args)
 		user_dict['followers'] = followers_list
 
-		sql = """SELECT following FROM Follower WHERE follower = '{}';""".format(email)
-		dbase = Database()		
-		following_list = dbase.execute(sql)
+		sql = """SELECT following FROM Follower WHERE follower = %s;"""
+		args = (email)
+		dbase = MyDatabase()		
+		following_list = dbase.execute(sql, args)
 		user_dict['following'] = following_list
 
 		sql = """SELECT Subscription.thread FROM Subscription \
-			JOIN Thread USING(thread)
-			WHERE Subscription.subscriber = '{}';""".format(email)
-		dbase = Database()		
-		subscriptions_list = dbase.execute(sql)
+			JOIN Thread USING(thread) WHERE Subscription.subscriber = %s;"""
+		args = (email)
+		dbase = MyDatabase()		
+		subscriptions_list = dbase.execute(sql, args)
 		user_dict['subscriptions'] = subscriptions_list
 		
 		return [json.dumps({"code": 0, "response": user_dict}, indent=4)]

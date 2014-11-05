@@ -1,6 +1,7 @@
+import MySQLdb
 import json
 
-from Database import Database
+from MyDatabase import MyDatabase
 from common import *
 
 
@@ -31,17 +32,22 @@ class Forum:
 		short_name = request_body.get('short_name')
 		short_name = tryEncode(short_name)
 		user = request_body.get('user')
-		sql = """INSERT INTO Forum (name, short_name, user) \
-			VALUES ('{name_value}', '{short_name_value}', '{user_value}');""".format( \
-				name_value = name, short_name_value = short_name, user_value = user)
-		db = Database()
-		db.execute(sql, True)
+		sql = """INSERT INTO Forum (name, short_name, user) VALUES (%s, %s, %s);"""	
+		args = (name, short_name, user)
+		db = MyDatabase()
 
-		forum_dict = getForumDict(short_name = short_name)
-		if forum_dict == dict():
-			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+		try :
+			db.execute(sql, args, True)
+		except MySQLdb.IntegrityError, message:
+			print message[0]
+		finally:
+			forum_dict = dict()
+			forum_dict['id'] = db.cursor.lastrowid
+			forum_dict['name'] = name
+			forum_dict['short_name'] = short_name
+			forum_dict['user'] = user
 
-		return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
+			return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
 
 
 	def details(self, qs_dict):
@@ -58,29 +64,30 @@ class Forum:
 			if user == dict():
 				return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 
-			sql = """SELECT follower FROM Follower \
-				WHERE following = '{}'""".format(user['email'])
-			dbase = Database()
-			data = dbase.execute(sql)
+			sql = """SELECT follower FROM Follower WHERE following = %s"""
+			args = (user['email'])
+			dbase = MyDatabase()
+			data = dbase.execute(sql, args)
+			
 			followers_list = list()
 			for line in data:
 				followers_list.append(line[0])
 			user['followers'] = followers_list
 
-			sql = """SELECT following FROM Follower WHERE follower = '{}'""".format(
-				user['email'])
-			dbase = Database()
-			data = dbase.execute(sql)
+			sql = """SELECT following FROM Follower WHERE follower = %s"""
+			args = (user['email'])
+			dbase = MyDatabase()
+			data = dbase.execute(sql, args)
 			following_list = list()
 			for line in data:
 				following_list.append(line[0])
 			user['following'] = strToJson(following_list)
 
 
-			sql = """SELECT thread FROM Subscription \
-				WHERE subscriber = '{}'""".format(user['email'])
-			dbase = Database()
-			data = dbase.execute(sql)
+			sql = """SELECT thread FROM Subscription WHERE subscriber = %s"""
+			args = (user['email'])
+			dbase = MyDatabase()
+			data = dbase.execute(sql, args)
 			data_list = list()
 			for line in data:
 				data_list.append(line[0])
@@ -192,13 +199,12 @@ class Forum:
 
 		sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, \
 			date, slug FROM Thread \
-			WHERE forum = '{forum_value}' {snc_sql} {ord_sql} {lim_sql};""".format(
-				forum_value = qs_dict['forum'][0], 
-				snc_sql = since_sql, 
-				lim_sql = limit_sql,
-				ord_sql = order_sql)
-		db = Database()
-		data = db.execute(sql)
+			WHERE forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql = since_sql,
+				ord_sql = order_sql, lim_sql = limit_sql)
+		args = (qs_dict['forum'][0], since_sql, limit_sql, order_sql)
+
+		db = MyDatabase()
+		data = db.execute(sql, args)
 		if not data:
 			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 
@@ -218,9 +224,10 @@ class Forum:
 			
 			if user_related:
 				sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
-					WHERE email = '{thread_email}';""".format(thread_email = thread[2])
-				dbase = Database()
-				user_data = dbase.execute(sql)
+					WHERE email = %s;"""
+				args = (thread[2])
+				dbase = MyDatabase()
+				user_data = dbase.execute(sql, args)
 				if not user_data:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				user_data = user_data[0]
@@ -235,9 +242,11 @@ class Forum:
 
 			if forum_related:
 				sql = """SELECT forum, name, short_name, user FROM Forum \
-					WHERE short_name = '{thread_forum}';""".format(thread_forum = thread[4])
-				dbase = Database()
-				forum_data = dbase.execute(sql)
+					WHERE short_name = %s;"""
+				args = (thread[4])
+
+				dbase = MyDatabase()
+				forum_data = dbase.execute(sql, args)
 				if not forum_data:
 					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 				if not forum_data[0]:
@@ -293,13 +302,14 @@ class Forum:
 		sql = """SELECT User.user, User.email, User.name, User.username, \
 			User.isAnonymous, User.about FROM User \
 			JOIN Post ON Post.user = User.email \
-			WHERE Post.forum = '{forum_value}' {snc_sql} {ord_sql} {lim_sql};""".format(
-				forum_value = qs_dict['forum'][0], 
+			WHERE Post.forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(
 				snc_sql = since_id_sql, 
 				lim_sql = limit_sql,
 				ord_sql = order_sql)
-		db = Database()
-		data = db.execute(sql)
+		args = (qs_dict['forum'][0])
+
+		db = MyDatabase()
+		data = db.execute(sql, args)
 		if not data:
 			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 

@@ -1,6 +1,6 @@
 import json
 
-from Database import Database
+from Entities.MyDatabase import MyDatabase
 
 
 MYSQL_DUPLICATE_ENTITY_ERROR = 1062
@@ -33,7 +33,7 @@ def getForumDict(short_name="", id=""):
 		return dict()
 
 	sql = """SELECT forum, name, short_name, user FROM Forum WHERE {};""".format(sql_where)
-	dbase = Database()
+	dbase = MyDatabase()
 	forum_list_sql = dbase.execute(sql)
 	if not forum_list_sql:
 		return dict()
@@ -103,7 +103,7 @@ def getPostList(user="", date="", forum="", id="", since="", limit=-1, sort='fla
 			order_value = order_sql,
 			sort_value  = sort_sql)
 
-	db = Database()
+	db = MyDatabase()
 	post_list_sql = db.execute(sql)
 	if not post_list_sql:
 		return list()
@@ -146,7 +146,7 @@ def getThreadList(id="", title="", forum=""):
 	sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, \
 		slug, likes, dislikes, points FROM Thread WHERE {};""".format(sql_where)
 
-	db = Database()
+	db = MyDatabase()
 	thread_list_sql = db.execute(sql)
 	if not thread_list_sql:
 		return list()
@@ -175,9 +175,10 @@ def getThreadList(id="", title="", forum=""):
 
 def getUserDict(email):
 	sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
-		WHERE email = '{}';""".format(email);
-	db = Database()
-	user_list_sql = db.execute(sql)
+		WHERE email = %s;"""
+	args = (email)
+	db = MyDatabase()
+	user_list_sql = db.execute(sql, args)
 	if not user_list_sql:
 		return dict()
 	if not user_list_sql[0]:

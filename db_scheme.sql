@@ -115,10 +115,10 @@ SET FOREIGN_KEY_CHECKS=1;
 CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id
 	`email` VARCHAR(45) NOT NULL, -- user email
-	`name` VARCHAR(45) NOT NULL, -- user name
-	`username` VARCHAR(45) NOT NULL, -- user name ???
+	`name` VARCHAR(45) NULL, -- user name
+	`username` VARCHAR(45) NULL, -- user name ???
 	`isAnonymous` BOOLEAN NOT NULL DEFAULT 0,
-	`about` TEXT NOT NULL,
+	`about` TEXT NULL,
 	PRIMARY KEY (`user`),
 	UNIQUE KEY (`email`)
 ) DEFAULT CHARSET=utf8;
