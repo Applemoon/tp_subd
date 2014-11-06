@@ -10,51 +10,49 @@ from Entities.Thread import Thread
 
 
 def subd_server_app(environ, start_response):
-	status = '200 OK'
-	headers = [('Content-type', 'application/json')]
-	start_response(status, headers)
+    status = '200 OK'
+    headers = [('Content-type', 'application/json')]
+    start_response(status, headers)
 
-	try:
-		request_body_size = int(environ['CONTENT_LENGTH'])
-		request_body = environ['wsgi.input'].read(request_body_size)
-	except (TypeError, ValueError):
-		request_body = "0"
+    try:
+        request_body_size = int(environ['CONTENT_LENGTH'])
+        request_body = environ['wsgi.input'].read(request_body_size)
+    except (TypeError, ValueError):
+        request_body = "0"
 
-	path = environ['PATH_INFO']
-	path_list = path.split('/')
+    path = environ['PATH_INFO']
+    path_list = path.split('/')
 
-	if not path.startswith('/db/api/'):
-		return [json.dumps({ "code": 3, 
-			"response": "Url should be like \'/db/api/{{entity}}/{{method}}/\'"}, 
-			indent=4)]
+    if not path.startswith('/db/api/'):
+        return [json.dumps({"code": 3,
+                            "response": "Url should be like \'/db/api/{{entity}}/{{method}}/\'"},
+                           indent=4)]
 
-	if path_list[3].lower() == 'clear':
-		db = MyDatabase()
-		return db.clear()
+    if path_list[3].lower() == 'clear':
+        db = MyDatabase()
+        return db.clear()
 
-	if len(path_list) < 5 or path_list[4] == '':
-		return [json.dumps({ "code": 3, "response": "Too short url"}, indent=4)]
+    if len(path_list) < 5 or path_list[4] == '':
+        return [json.dumps({"code": 3, "response": "Too short url"}, indent=4)]
 
-	qs = environ['QUERY_STRING']
-	qs_dict = parse_qs(qs, True);
-	db_method = path_list[4]
-	html_method  = environ['REQUEST_METHOD']
-	if path_list[3].lower() == 'forum':
-		forum = Forum()
-		return forum.doMethod(db_method, html_method, request_body, qs_dict)
-	elif path_list[3].lower() == 'post':
-		post = Post()
-		return post.doMethod(db_method, html_method, request_body, qs_dict)
-	elif path_list[3].lower() == 'user':
-		user = User()
-		return user.doMethod(db_method, html_method, request_body, qs_dict)
-	elif path_list[3].lower() == 'thread':
-		thread = Thread()
-		return thread.doMethod(db_method, html_method, request_body, qs_dict)
-	else:
-		return [json.dumps({ "code": 3, "response": "Unknown entity"}, indent=4)]
+    qs = environ['QUERY_STRING']
+    qs_dict = parse_qs(qs, True);
+    db_method = path_list[4]
+    html_method = environ['REQUEST_METHOD']
+    if path_list[3].lower() == 'forum':
+        forum = Forum()
+        return forum.doMethod(db_method, html_method, request_body, qs_dict)
+    elif path_list[3].lower() == 'post':
+        post = Post()
+        return post.do_method(db_method, html_method, request_body, qs_dict)
+    elif path_list[3].lower() == 'user':
+        user = User()
+        return user.do_method(db_method, html_method, request_body, qs_dict)
+    elif path_list[3].lower() == 'thread':
+        thread = Thread()
+        return thread.do_method(db_method, html_method, request_body, qs_dict)
 
-	return [json.dumps({ "code": 4, "response": "BIG error"}, indent=4)]
+    return [json.dumps({"code": 3, "response": "Unknown entity"}, indent=4)]
 
 
 port = 8000
