@@ -1,6 +1,6 @@
-------------------
--- foreigh keys --
-------------------
+---------------------------
+-- foreigh keys (старое) --
+---------------------------
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id

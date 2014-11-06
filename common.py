@@ -122,6 +122,7 @@ def getPostList(user="", date="", forum="", id="", since="", limit=-1, sort='fla
 		post['date'] = post_sql[5]
 		post['likes'] = strToJson(post_sql[7])
 		post['dislikes'] = strToJson(post_sql[8])
+		post['point'] = post['likes'] - post['dislikes']
 		post['isSpam'] = strToJson(post_sql[9], True)
 		post['isEdited'] = strToJson(post_sql[10], True)
 		post['isDeleted'] = strToJson(post_sql[11], True)
@@ -132,13 +133,15 @@ def getPostList(user="", date="", forum="", id="", since="", limit=-1, sort='fla
 	return post_list
 
 
-def getThreadList(id="", title="", forum=""):
+def getThreadList(id="", title="", forum="", user=""):
 	if id != "":
 		sql_where = "thread = {}".format(id)
 	elif title != "":
 		sql_where = "title = '{}'".format(title)
 	elif forum != "":
 		sql_where = "forum = '{}'".format(forum)
+	elif user != "":
+		sql_where = "user = '{}'".format(user)
 	else:
 		print "VERY BAD ERROR IN getThreadList"
 		return list()

@@ -84,11 +84,9 @@ class User:
 		following_list = dbase.execute(sql, args)
 		user_dict['following'] = following_list
 
-		sql = """SELECT Subscription.thread FROM Subscription \
-			JOIN Thread USING(thread) WHERE Subscription.subscriber = %s;"""
-		args = (email)
+		sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
 		dbase = MyDatabase()		
-		subscriptions_list = dbase.execute(sql, args)
+		subscriptions_list = dbase.execute(sql, (email))
 		user_dict['subscriptions'] = subscriptions_list
 		
 		return [json.dumps({"code": 0, "response": user_dict}, indent=4)]

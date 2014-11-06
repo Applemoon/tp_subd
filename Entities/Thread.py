@@ -8,7 +8,7 @@ from common import *
 class Thread:
 	def doMethod(self, db_method, html_method, request_body, qs_dict):
 		if db_method == 'list':
-			return self.list(html_method, request_body)
+			return self.list(qs_dict)
 		elif db_method == 'create':
 			return self.create(html_method, request_body)
 		elif db_method == 'details':
@@ -35,9 +35,72 @@ class Thread:
 		return [json.dumps({ "code": 3, "response": "Unknown thread db method"}, indent=4)]
 
 
-	def list(self, html_method, request_body):
-		# TODO
-		return True
+	def list(self, qs_dict):
+		if qs_dict.get('forum'):
+			key = "forum"
+		elif qs_dict.get('user'):
+			key = "user"
+		else:
+			return [json.dumps({ "code": 2, "response": "No 'forum' key"}, indent=4)]
+		key_value = qs_dict[key][0]
+
+		# Since part
+		since_sql = ''
+		if qs_dict.get('since'):
+			since_sql = """AND Thread.date >= '{}'""".format(qs_dict['since'][0])
+
+		# Limit part
+		limit_sql = ''
+		if qs_dict.get('limit'):
+			limit = qs_dict['limit'][0]
+			try:
+				limit = int(limit)
+			except ValueError:
+				return [json.dumps({ "code": 3, "response": "Wrong limit value"}, indent=4)]
+			if limit < 0:
+				return [json.dumps({ "code": 3, "response": "Wrong limit value"}, indent=4)]
+			limit_sql = """LIMIT {}""".format(limit)
+
+		# Order part
+		order = 'desc'
+		if qs_dict.get('order'):
+			order = qs_dict['order'][0]
+			if order != 'asc' and order != 'desc':
+				return [json.dumps({ "code": 3, "response": "Wrong order value"}, indent=4)]
+		order_sql = """ORDER BY date {}""".format(order)
+
+		sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, \
+			date, slug FROM Thread"""
+		if key == "forum":
+			sql += """ WHERE forum = %s"""
+		else:
+			sql += """ WHERE user = %s"""
+
+		sql += """ {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql = since_sql,
+				ord_sql = order_sql, lim_sql = limit_sql)
+
+		db = MyDatabase()
+		data = db.execute(sql, (key_value))
+		if not data:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+
+		thread_list = list()
+		for thread in data:
+			thread_dict = dict()
+			thread_dict['id'] = strToJson(thread[0])
+			thread_dict['title'] = strToJson(thread[1])
+			thread_dict['user'] = strToJson(thread[2])
+			thread_dict['message'] = strToJson(thread[3])
+			thread_dict['forum'] = strToJson(thread[4])
+			thread_dict['isDeleted'] = strToJson(thread[5], True)
+			thread_dict['isClosed'] = strToJson(thread[6], True)
+			date = thread[7].strftime('%Y-%m-%d %H:%M:%S')
+			thread_dict['date'] = strToJson(date)
+			thread_dict['slug'] = strToJson(thread[8])
+		
+			thread_list.append(thread_dict)
+
+		return [json.dumps({ "code": 0, "response": thread_list}, indent=4)]
 
 
 	def create(self, html_method, request_body):
@@ -139,7 +202,7 @@ class Thread:
 		return True
 
 
-	def listPosts(qs_dict):
+	def listPosts(self, qs_dict):
 		# TODO
 		return True
 

@@ -141,21 +141,76 @@ class Post:
 		return [json.dumps({"code": 0, "response": post}, indent=4)]
 
 
-	def remove(self, html_method, request_body):
-		# TODO
-		return True
+	def remove(self, html_method, request_body, doRemove = True):
+		if html_method != 'POST':
+			return [json.dumps({ "code": 3, 
+				"response": "Wrong html method for 'post.remove'"}, indent=4)]
+
+		request_body = json.loads(request_body)
+		id = request_body.get('post')
+
+		if doRemove:
+			sql = """UPDATE Post SET isDeleted = 1 WHERE post = %s;"""
+		else:
+			sql = """UPDATE Post SET isDeleted = 0 WHERE post = %s;"""
+		db = MyDatabase()
+		db.execute(sql, (id), True)
+
+		return [json.dumps({"code": 0, "response": {"post": id}}, indent=4)]
 
 
 	def restore(self, html_method, request_body):
-		# TODO
-		return True
+		return self.remove(html_method, request_body, False)
 
 
 	def update(self, html_method, request_body):
-		# TODO
-		return True
+		if html_method != 'POST':
+			return [json.dumps({ "code": 3, 
+				"response": "Wrong html method for 'post.remove'"}, indent=4)]
+
+		request_body = json.loads(request_body)
+		id = request_body.get('post')
+		message = request_body.get('message')
+
+		sql = """UPDATE Post SET message = %s WHERE post = %s;"""
+
+		db = MyDatabase()
+		db.execute(sql, (message, id), True)
+
+		post = getPostList(id = id)
+		if not post:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+		if not post[0]:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+
+		return [json.dumps({"code": 0, "response": post[0]}, indent=4)]
 
 
 	def vote(self, html_method, request_body):
-		# TODO
-		return True
+		if html_method != 'POST':
+			return [json.dumps({ "code": 3, 
+				"response": "Wrong html method for 'post.remove'"}, indent=4)]
+
+		request_body = json.loads(request_body)
+		id = request_body.get('post')
+		vote = request_body.get('vote')
+		if vote != 1 and vote != -1:
+			print "VERY BAD ERROR"
+			# TODO return error
+
+		if vote == 1:
+			sql = """UPDATE Post SET likes = likes + 1 WHERE post = %s;"""
+		else:
+			sql = """UPDATE Post SET dislikes = dislikes + 1 WHERE post = %s;"""
+
+
+		db = MyDatabase()
+		db.execute(sql, (id), True)
+
+		post = getPostList(id = id)
+		if not post:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+		if not post[0]:
+			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+
+		return [json.dumps({"code": 0, "response": post[0]}, indent=4)]

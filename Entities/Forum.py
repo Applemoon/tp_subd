@@ -41,11 +41,12 @@ class Forum:
 		except MySQLdb.IntegrityError, message:
 			print message[0]
 		finally:
-			forum_dict = dict()
-			forum_dict['id'] = db.cursor.lastrowid
-			forum_dict['name'] = name
-			forum_dict['short_name'] = short_name
-			forum_dict['user'] = user
+			# forum_dict = dict()
+			# forum_dict['id'] = db.cursor.lastrowid
+			# forum_dict['name'] = name
+			# forum_dict['short_name'] = short_name
+			# forum_dict['user'] = user
+			forum_dict = getForumDict(id = db.cursor.lastrowid)
 
 			return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
 
@@ -162,7 +163,7 @@ class Forum:
 		# Since part
 		since_sql = ''
 		if qs_dict.get('since'):
-			since_sql = """AND Thread.date >= '{}'""".format(qs_dict['since'][0])
+			since_sql = """AND date >= '{}'""".format(qs_dict['since'][0])
 
 		# Limit part
 		limit_sql = ''
@@ -182,7 +183,7 @@ class Forum:
 			order = qs_dict['order'][0]
 			if order != 'asc' and order != 'desc':
 				return [json.dumps({ "code": 3, "response": "Wrong order value"}, indent=4)]
-		order_sql = """ORDER BY Thread.date {}""".format(order)
+		order_sql = """ORDER BY date {}""".format(order)
 
 		# Related part
 		forum_related = False
@@ -201,10 +202,9 @@ class Forum:
 			date, slug FROM Thread \
 			WHERE forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql = since_sql,
 				ord_sql = order_sql, lim_sql = limit_sql)
-		args = (qs_dict['forum'][0], since_sql, limit_sql, order_sql)
 
 		db = MyDatabase()
-		data = db.execute(sql, args)
+		data = db.execute(sql, (qs_dict['forum'][0]))
 		if not data:
 			return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
 
@@ -223,41 +223,43 @@ class Forum:
 			thread_dict['slug'] = strToJson(thread[8])
 			
 			if user_related:
-				sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
-					WHERE email = %s;"""
-				args = (thread[2])
-				dbase = MyDatabase()
-				user_data = dbase.execute(sql, args)
-				if not user_data:
-					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-				user_data = user_data[0]
-				user_dict = dict()
-				user_dict['id'] = strToJson(user_data[0])
-				user_dict['email'] = strToJson(user_data[1])
-				user_dict['name'] = strToJson(user_data[2])
-				user_dict['username'] = strToJson(user_data[3])
-				user_dict['isAnonymous'] = strToJson(user_data[4], True)
-				user_dict['about'] = strToJson(user_data[5])
-				thread_dict['user'] = strToJson(user_dict)
+				# sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
+				# 	WHERE email = %s;"""
+				# args = (thread[2])
+				# dbase = MyDatabase()
+				# user_data = dbase.execute(sql, args)
+				# if not user_data:
+				# 	return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+				# user_data = user_data[0]
+				# user_dict = dict()
+				# user_dict['id'] = strToJson(user_data[0])
+				# user_dict['email'] = strToJson(user_data[1])
+				# user_dict['name'] = strToJson(user_data[2])
+				# user_dict['username'] = strToJson(user_data[3])
+				# user_dict['isAnonymous'] = strToJson(user_data[4], True)
+				# user_dict['about'] = strToJson(user_data[5])
+				# thread_dict['user'] = strToJson(user_dict)
+				thread_dict['user'] = getUserDict(thread_dict['user'])
 
 			if forum_related:
-				sql = """SELECT forum, name, short_name, user FROM Forum \
-					WHERE short_name = %s;"""
-				args = (thread[4])
+				# sql = """SELECT forum, name, short_name, user FROM Forum \
+				# 	WHERE short_name = %s;"""
+				# args = (thread[4])
 
-				dbase = MyDatabase()
-				forum_data = dbase.execute(sql, args)
-				if not forum_data:
-					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-				if not forum_data[0]:
-					return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
-				forum_data = forum_data[0]
-				forum_dict = dict()
-				forum_dict['id'] = strToJson(forum_data[0])
-				forum_dict['name'] = strToJson(forum_data[1])
-				forum_dict['short_name'] = strToJson(forum_data[2])
-				forum_dict['user'] = strToJson(forum_data[3])
-				thread_dict['forum'] = strToJson(forum_dict)
+				# dbase = MyDatabase()
+				# forum_data = dbase.execute(sql, args)
+				# if not forum_data:
+				# 	return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+				# if not forum_data[0]:
+				# 	return [json.dumps({ "code": 1, "response": "Empty set"}, indent=4)]
+				# forum_data = forum_data[0]
+				# forum_dict = dict()
+				# forum_dict['id'] = strToJson(forum_data[0])
+				# forum_dict['name'] = strToJson(forum_data[1])
+				# forum_dict['short_name'] = strToJson(forum_data[2])
+				# forum_dict['user'] = strToJson(forum_data[3])
+				# thread_dict['forum'] = strToJson(forum_dict)
+				thread_dict['forum'] = getForumDict(short_name = thread_dict['forum'])
 
 			thread_list.append(thread_dict)
 
