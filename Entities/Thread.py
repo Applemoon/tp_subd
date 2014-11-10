@@ -182,46 +182,132 @@ class Thread:
         return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod
-    def remove(html_method, request_body):
-        # TODO
-        return True
+    def remove(html_method, request_body, restore=False):
+        if html_method != 'POST':
+            return [json.dumps({"code": 3,
+                                "response": "Wrong html method for 'thread.remove/restore'"}, indent=4)]
+
+        thread = request_body.get('thread')
+        if not restore:
+            sql = """UPDATE Thread SET idDeleted = 1 WHERE thread = %s;"""
+        else:
+            sql = """UPDATE Thread SET idDeleted = 0 WHERE thread = %s;"""
+
+        db = MyDatabase()
+        db.execute(sql, thread, True)
+
+        return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod
-    def open(html_method, request_body):
-        # TODO
-        return True
+    def open(html_method, request_body, close=False):
+        if html_method != 'POST':
+            return [json.dumps({"code": 3,
+                                "response": "Wrong html method for 'thread.open/close'"}, indent=4)]
+
+        thread = request_body.get('thread')
+        if not close:
+            sql = """UPDATE Thread SET idClosed = 0 WHERE thread = %s;"""
+        else:
+            sql = """UPDATE Thread SET idClosed = 1 WHERE thread = %s;"""
+
+        db = MyDatabase()
+        db.execute(sql, thread, True)
+
+        return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod
     def close(html_method, request_body):
-        # TODO
-        return True
+        return Thread.open(html_method, request_body, True)
 
     @staticmethod
     def restore(html_method, request_body):
-        # TODO
-        return True
+        return Thread.remove(html_method, request_body, True)
 
     @staticmethod
     def list_posts(qs_dict):
-        # TODO
-        return True
+        thread = qs_dict.get('thread')
+
+        since = ""
+        if qs_dict.get('since', ''):
+            since = qs_dict['since'][0]
+
+        limit = -1
+        if qs_dict.get('limit', ''):
+            limit = qs_dict['limit'][0]
+
+        order = 'flat'
+        if qs_dict.get('order'):
+            order = qs_dict['order'][0]
+
+        sort = 'desc'
+        if qs_dict.get('sort'):
+            sort = qs_dict['sort'][0]
+
+        post_list = get_post_list(thread=thread, since=since, limit=limit, sort=sort, order=order)
+
+        return [json.dumps({"code": 0, "response": post_list}, indent=4)]
 
     @staticmethod
     def update(html_method, request_body):
-        # TODO
-        return True
+        if html_method != 'POST':
+            return [json.dumps({"code": 3,
+                                "response": "Wrong html method for 'thread.update'"}, indent=4)]
+
+        message = request_body.get('message')
+        slug = request_body.get('slug')
+        thread = request_body.get('thread')
+
+        sql = """UPDATE Thread SET message = %s AND slug = %s WHERE thread = %s;"""
+        args = (message, slug, thread)
+        db = MyDatabase()
+        db.execute(sql, args, True)
+        thread_dict = get_thread_list(id_value=thread)[0]
+
+        return [json.dumps({"code": 0, "response": thread_dict}, indent=4)]
 
     @staticmethod
-    def subscribe(html_method, request_body):
-        # TODO
-        return True
+    def subscribe(html_method, request_body, unsubscribe=False):
+        if html_method != 'POST':
+            return [json.dumps({"code": 3,
+                                "response": "Wrong html method for 'thread.subscribe/unsubscribe'"}, indent=4)]
+
+        user = request_body.get('user')
+        thread = request_body.get('thread')
+        if not unsubscribe:
+            sql = """INSERT INTO Subscription (subscriber, thread) VALUES (%s, %s);"""
+        else:
+            sql = """DELETE FROM Subscription WHERE subscriber = %s AND thread = %s;"""
+
+        args = (user, thread)
+        db = MyDatabase()
+        db.execute(sql, args, True)
+        result_dict = dict()
+        result_dict['thread'] = thread
+        result_dict['user'] = str_to_json(user)
+
+        return [json.dumps({"code": 0, "response": result_dict}, indent=4)]
 
     @staticmethod
     def unsubscribe(html_method, request_body):
-        # TODO
-        return True
+        return Thread.subscribe(html_method, request_body, True)
 
     @staticmethod
     def vote(html_method, request_body):
-        # TODO
-        return True
+        if html_method != 'POST':
+            return [json.dumps({"code": 3,
+                                "response": "Wrong html method for 'thread.vote'"}, indent=4)]
+
+        vote = request_body.get('vote')
+        thread = request_body.get('thread')
+
+        if vote == 1:
+            sql = """UPDATE Thread SET likes = likes + 1 WHERE thread = %s;"""
+        else:
+            sql = """UPDATE Thread SET dislikes = dislikes + 1 WHERE thread = %s;"""
+
+        db = MyDatabase()
+        db.execute(sql, thread, True)
+
+        thread_dict = get_thread_list(id_value=id)[0]
+
+        return [json.dumps({"code": 0, "response": thread_dict}, indent=4)]

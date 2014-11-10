@@ -179,8 +179,7 @@ def get_thread_list(id_value="", title="", forum="", user=""):
 
 
 def get_user_dict(email):
-    sql = """SELECT user, email, name, username, isAnonymous, about FROM User \
-        WHERE email = %s;"""
+    sql = """SELECT user, email, name, username, isAnonymous, about FROM User WHERE email = %s;"""
     args = email
     db = MyDatabase()
     user_list_sql = db.execute(sql, args)

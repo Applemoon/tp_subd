@@ -96,7 +96,7 @@ class User:
 
         follower = request_body.get('follower')
         followee = request_body.get('followee')
-        sql = """INSERT INTO Follower (follower, following) VALUES (%s, %s)"""
+        sql = """INSERT INTO Follower (follower, following) VALUES (%s, %s);"""
         args = (follower, followee)
         db = MyDatabase()
         db.execute(sql, args, True)
@@ -111,7 +111,7 @@ class User:
 
         follower = request_body.get('follower')
         followee = request_body.get('followee')
-        sql = """DELETE FROM Follower WHERE follower = %s AND following = %s"""
+        sql = """DELETE FROM Follower WHERE follower = %s AND following = %s;"""
         args = (follower, followee)
         db = MyDatabase()
         db.execute(sql, args, True)
@@ -140,7 +140,7 @@ class User:
         user = request_body.get('user')
         name = request_body.get('name')
 
-        sql = """UPDATE User SET about = %s AND name = %s WHERE email = %s"""
+        sql = """UPDATE User SET about = %s AND name = %s WHERE email = %s;"""
         args = (about, name, user)
         db = MyDatabase()
         db.execute(sql, args)
@@ -178,7 +178,7 @@ class User:
 
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.follower = User.email \
-            WHERE Follower.following = %s %s %s %s"""
+            WHERE Follower.following = %s %s %s %s;"""
         args = (user, since_sql, order_sql, limit_sql)
         db = MyDatabase()
         user_list_sql = db.execute(sql, args, True)
@@ -197,11 +197,11 @@ class User:
             user['name'] = str_to_json(user_sql[4])
             user['username'] = str_to_json(user_sql[5])
 
-            sql = """SELECT follower FROM Follower WHERE following = %s"""
+            sql = """SELECT follower FROM Follower WHERE following = %s;"""
             db = MyDatabase()
             user['followers'] = db.execute(sql, user)
 
-            sql = """SELECT following FROM Follower WHERE follower = %s"""
+            sql = """SELECT following FROM Follower WHERE follower = %s;"""
             user['following'] = db.execute(sql, user)
 
             sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
@@ -243,7 +243,7 @@ class User:
 
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.following = User.email \
-            WHERE Follower.follower = %s %s %s %s"""
+            WHERE Follower.follower = %s %s %s %s;"""
         args = (user, since_sql, order_sql, limit_sql)
         db = MyDatabase()
         user_list_sql = db.execute(sql, args, True)
@@ -262,11 +262,11 @@ class User:
             user['name'] = str_to_json(user_sql[4])
             user['username'] = str_to_json(user_sql[5])
 
-            sql = """SELECT follower FROM Follower WHERE following = %s"""
+            sql = """SELECT follower FROM Follower WHERE following = %s;"""
             db = MyDatabase()
             user['followers'] = db.execute(sql, user)
 
-            sql = """SELECT following FROM Follower WHERE follower = %s"""
+            sql = """SELECT following FROM Follower WHERE follower = %s;"""
             user['following'] = db.execute(sql, user)
 
             sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
