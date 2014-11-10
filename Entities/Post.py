@@ -30,7 +30,17 @@ class Post:
             return [json.dumps({"code": 2, "response": "No 'forum' or 'thread' key"},
                                indent=4)]
 
-            # TODO
+        forum = qs_dict['forum'][0]
+        thread = qs_dict['thread'][0]
+        since = qs_dict.get('since', '')
+        limit = qs_dict.get('limit', -1)
+        order = qs_dict.get('order', 'desc')
+        if forum != "":
+            post_list = get_post_list(forum=forum, since=since, limit=limit, order=order)
+        else:
+            post_list = get_post_list(thread=thread, since=since, limit=limit, order=order)
+
+        return [json.dumps({"code": 0, "response": post_list}, indent=4)]
 
     @staticmethod
     def create(html_method, request_body):
@@ -38,7 +48,7 @@ class Post:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'post.create'"}, indent=4)]
 
-        # Requried
+        # Required
         request_body = json.loads(request_body)
         date = request_body.get('date')
         thread = request_body.get('thread')

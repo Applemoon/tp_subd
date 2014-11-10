@@ -36,12 +36,12 @@ def subd_server_app(environ, start_response):
         return [json.dumps({"code": 3, "response": "Too short url"}, indent=4)]
 
     qs = environ['QUERY_STRING']
-    qs_dict = parse_qs(qs, True);
+    qs_dict = parse_qs(qs, True)
     db_method = path_list[4]
     html_method = environ['REQUEST_METHOD']
     if path_list[3].lower() == 'forum':
         forum = Forum()
-        return forum.doMethod(db_method, html_method, request_body, qs_dict)
+        return forum.do_method(db_method, html_method, request_body, qs_dict)
     elif path_list[3].lower() == 'post':
         post = Post()
         return post.do_method(db_method, html_method, request_body, qs_dict)

@@ -6,7 +6,7 @@ from common import *
 
 
 class Forum:
-    def doMethod(self, db_method, html_method, request_body, qs_dict):
+    def do_method(self, db_method, html_method, request_body, qs_dict):
         if db_method == 'create':
             return self.create(html_method, request_body)
         elif db_method == 'details':
@@ -111,15 +111,19 @@ class Forum:
                     return [json.dumps({"code": 3, "response": "Wrong related value"},
                                        indent=4)]
 
+        since = ""
         if qs_dict.get('since'):
             since = qs_dict['since'][0]
 
+        limit = ""
         if qs_dict.get('limit'):
             limit = qs_dict['limit'][0]
 
+        sort = ""
         if qs_dict.get('sort'):
             sort = qs_dict['sort'][0]
 
+        order = ""
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
 

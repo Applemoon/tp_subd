@@ -31,10 +31,3 @@ class MyDatabase:
 
     def get_last_row_id(self):
         return self.cursor.lastrowid
-
-
-        # TODO
-        # Exception _mysql_exceptions.OperationalError:
-        # (2013, 'Lost connection to MySQL server during query')
-        # in <bound method Cursor.__del__ of <MySQLdb.cursors.Cursor object at 0x7f380ccd73d0>>
-        # ignored

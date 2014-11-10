@@ -49,15 +49,17 @@ def get_forum_dict(short_name="", id_value=""):
     return forum
 
 
-def get_post_list(user="", date="", forum="", id_value="", since="", limit=-1, sort='flat',
+def get_post_list(user="", date="", forum="", thread="", id_value="", since="", limit=-1, sort='flat',
                   order='desc'):
     # WHERE part
     if id_value != "":
-        sql_where = "post = {}".format(id_value)
+        where_sql = "post = {}".format(id_value)
     elif forum != "":
-        sql_where = "forum = '{}'".format(forum)
+        where_sql = "forum = '{}'".format(forum)
+    elif thread != "":
+        where_sql = "thread = '{}'".format(thread)
     elif user != "" and date != "":
-        sql_where = "user = '{user_value}' AND date = '{date_value}'".format(
+        where_sql = "user = '{user_value}' AND date = '{date_value}'".format(
             user_value=user, date_value=date)
     else:
         print "BAD ERROR IN getPostList"
@@ -97,7 +99,7 @@ def get_post_list(user="", date="", forum="", id_value="", since="", limit=-1, s
         isSpam, isEdited, isDeleted, isHighlighted, isApproved FROM Post \
         WHERE {where_value} {since_value} {limit_value} {order_value} \
             {sort_value};""".format(
-        where_value=sql_where,
+        where_value=where_sql,
         since_value=since_sql,
         limit_value=limit_sql,
         order_value=order_sql,
@@ -119,7 +121,7 @@ def get_post_list(user="", date="", forum="", id_value="", since="", limit=-1, s
         post['forum'] = str_to_json(post_sql[3])
         post['message'] = str_to_json(post_sql[4])
         post['parent'] = str_to_json(post_sql[5])
-        post['date'] = post_sql[5]
+        post['date'] = post_sql[6].strftime('%Y-%m-%d %H:%M:%S')
         post['likes'] = str_to_json(post_sql[7])
         post['dislikes'] = str_to_json(post_sql[8])
         post['point'] = post['likes'] - post['dislikes']
