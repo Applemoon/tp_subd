@@ -105,8 +105,7 @@ class Thread:
     @staticmethod
     def create(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'thread.create'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.create'"}, indent=4)]
 
         request_body = json.loads(request_body)
 
@@ -116,10 +115,9 @@ class Thread:
         title = request_body.get('title')
         title = try_encode(title)
         is_closed_key = request_body.get('isClosed')
+        is_closed = 0
         if is_closed_key:
             is_closed = 1
-        else:
-            is_closed = 0
         user = request_body.get('user')
         date = request_body.get('date')
         message = request_body.get('message')
@@ -129,13 +127,12 @@ class Thread:
 
         # Optional
         is_deleted_key = request_body.get('isDeleted', False)
+        is_deleted = 0
         if is_deleted_key:
             is_deleted = 1
-        else:
-            is_deleted = 0
 
-        sql = """INSERT INTO Thread (forum, title, isClosed, user, date, \
-            message, slug, isDeleted) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"""
+        sql = """INSERT INTO Thread (forum, title, isClosed, user, date, message, slug, isDeleted) \
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"""
         args = (forum, title, is_closed, user, date, message, slug, is_deleted)
         db = MyDatabase()
 
@@ -187,11 +184,13 @@ class Thread:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.remove/restore'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         thread = request_body.get('thread')
         if not restore:
-            sql = """UPDATE Thread SET idDeleted = 1 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET isDeleted = 1 WHERE thread = %s;"""
         else:
-            sql = """UPDATE Thread SET idDeleted = 0 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET isDeleted = 0 WHERE thread = %s;"""
 
         db = MyDatabase()
         db.execute(sql, thread, True)
@@ -204,11 +203,13 @@ class Thread:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.open/close'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         thread = request_body.get('thread')
         if not close:
-            sql = """UPDATE Thread SET idClosed = 0 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET isClosed = 0 WHERE thread = %s;"""
         else:
-            sql = """UPDATE Thread SET idClosed = 1 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET isClosed = 1 WHERE thread = %s;"""
 
         db = MyDatabase()
         db.execute(sql, thread, True)
@@ -225,7 +226,7 @@ class Thread:
 
     @staticmethod
     def list_posts(qs_dict):
-        thread = qs_dict.get('thread')
+        thread = qs_dict.get('thread')[0]
 
         since = ""
         if qs_dict.get('since', ''):
@@ -235,11 +236,11 @@ class Thread:
         if qs_dict.get('limit', ''):
             limit = qs_dict['limit'][0]
 
-        order = 'flat'
+        order = 'desc'
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
 
-        sort = 'desc'
+        sort = 'flat'
         if qs_dict.get('sort'):
             sort = qs_dict['sort'][0]
 
@@ -253,6 +254,8 @@ class Thread:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.update'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         message = request_body.get('message')
         slug = request_body.get('slug')
         thread = request_body.get('thread')
@@ -261,7 +264,11 @@ class Thread:
         args = (message, slug, thread)
         db = MyDatabase()
         db.execute(sql, args, True)
-        thread_dict = get_thread_list(id_value=thread)[0]
+        thread_list = get_thread_list(id_value=thread)
+        if thread_list != list():
+            thread_dict = thread_list[0]
+        else:
+            thread_dict = dict()
 
         return [json.dumps({"code": 0, "response": thread_dict}, indent=4)]
 
@@ -270,6 +277,8 @@ class Thread:
         if html_method != 'POST':
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.subscribe/unsubscribe'"}, indent=4)]
+
+        request_body = json.loads(request_body)
 
         user = request_body.get('user')
         thread = request_body.get('thread')
@@ -297,6 +306,8 @@ class Thread:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.vote'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         vote = request_body.get('vote')
         thread = request_body.get('thread')
 
@@ -308,6 +319,9 @@ class Thread:
         db = MyDatabase()
         db.execute(sql, thread, True)
 
-        thread_dict = get_thread_list(id_value=id)[0]
+        thread_dict = dict()
+        thread_list = get_thread_list(id_value=thread)
+        if thread_list != list():
+            thread_dict = thread_list[0]
 
         return [json.dumps({"code": 0, "response": thread_dict}, indent=4)]

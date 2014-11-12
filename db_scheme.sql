@@ -1,5 +1,5 @@
 ---------------------------
--- foreigh keys (старое) --
+-- foreign keys (старое) --
 ---------------------------
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
@@ -109,7 +109,7 @@ SET FOREIGN_KEY_CHECKS=1;
 
 
 ---------------------
--- no foreigh keys --
+-- no foreign keys --
 ---------------------
 
 CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (

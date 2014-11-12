@@ -25,11 +25,11 @@ def try_encode(value):
 
 def get_forum_dict(short_name="", id_value=""):
     if id_value != "":
-        sql_where = "forum = {}".format(id_value)
+        sql_where = "forum = '{}'".format(id_value)
     elif short_name != "":
         sql_where = "short_name = '{}'".format(short_name)
     else:
-        print "VERY BAD ERROR IN getForumDict"
+        print "Wrong value for id_value or short_name in getForumDict"
         return dict()
 
     sql = """SELECT forum, name, short_name, user FROM Forum WHERE {};""".format(sql_where)
@@ -49,7 +49,7 @@ def get_forum_dict(short_name="", id_value=""):
     return forum
 
 
-def get_post_list(user="", date="", forum="", thread="", id_value="", since="", limit=-1, sort='flat',
+def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1, sort='flat',
                   order='desc'):
     # WHERE part
     if id_value != "":
@@ -57,20 +57,20 @@ def get_post_list(user="", date="", forum="", thread="", id_value="", since="", 
     elif forum != "":
         where_sql = "forum = '{}'".format(forum)
     elif thread != "":
-        where_sql = "thread = '{}'".format(thread)
-    elif user != "" and date != "":
-        where_sql = "user = '{user_value}' AND date = '{date_value}'".format(
-            user_value=user, date_value=date)
+        where_sql = "thread = {}".format(thread)
+    elif user != "":
+        where_sql = "user = '{user_value}'".format(
+            user_value=user)
     else:
-        print "BAD ERROR IN getPostList"
+        print "Can't find search field in getPostList"
         return list()
 
     # since part
     since_sql = ""
     if since != "":
-        since_sql = """AND date > ='{}'""".format(since)
+        since_sql = """AND date >= '{}'""".format(since)
 
-    # sort part
+    # sort part TODO
     if sort != 'flat' and sort != 'tree' and sort != 'parent_tree':
         print "Wrong sort value"
         return list()
@@ -97,8 +97,7 @@ def get_post_list(user="", date="", forum="", thread="", id_value="", since="", 
 
     sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, \
         isSpam, isEdited, isDeleted, isHighlighted, isApproved FROM Post \
-        WHERE {where_value} {since_value} {limit_value} {order_value} \
-            {sort_value};""".format(
+        WHERE {where_value} {since_value} {order_value} {sort_value} {limit_value};""".format(
         where_value=where_sql,
         since_value=since_sql,
         limit_value=limit_sql,
@@ -130,6 +129,7 @@ def get_post_list(user="", date="", forum="", thread="", id_value="", since="", 
         post['isDeleted'] = str_to_json(post_sql[11], True)
         post['isHighlighted'] = str_to_json(post_sql[12], True)
         post['isApproved'] = str_to_json(post_sql[13], True)
+
         post_list.append(post)
 
     return post_list
@@ -145,7 +145,7 @@ def get_thread_list(id_value="", title="", forum="", user=""):
     elif user != "":
         sql_where = "user = '{}'".format(user)
     else:
-        print "VERY BAD ERROR IN getThreadList"
+        print "Can't find search field in getThreadList"
         return list()
 
     sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, \

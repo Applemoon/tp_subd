@@ -33,6 +33,7 @@ class User:
                                 "response": "Wrong html method for 'user.create'"}, indent=4)]
 
         request_body = json.loads(request_body)
+
         username = request_body.get('username')
         username = try_encode(username)
         about = request_body.get('about')
@@ -94,6 +95,8 @@ class User:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'user.follow'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         follower = request_body.get('follower')
         followee = request_body.get('followee')
         sql = """INSERT INTO Follower (follower, following) VALUES (%s, %s);"""
@@ -108,6 +111,8 @@ class User:
         if html_method != 'POST':
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'user.unfollow'"}, indent=4)]
+
+        request_body = json.loads(request_body)
 
         follower = request_body.get('follower')
         followee = request_body.get('followee')
@@ -124,9 +129,22 @@ class User:
             return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
 
         user = qs_dict['user'][0]
-        since = qs_dict.get('since', '')
-        limit = qs_dict.get('limit', -1)
-        order = qs_dict.get('order', 'desc')
+
+        # Since part
+        since = ''
+        if qs_dict.get('since'):
+            since = qs_dict['since'][0]
+
+        # Limit part
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
+
+        # Order part
+        order = 'desc'
+        if qs_dict.get('order'):
+            order = qs_dict['order'][0]
+
         post_list = get_post_list(user=user, since=since, limit=limit, order=order)
         return [json.dumps({"code": 0, "response": post_list}, indent=4)]
 
@@ -136,9 +154,14 @@ class User:
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'user.updateProfile'"}, indent=4)]
 
+        request_body = json.loads(request_body)
+
         about = request_body.get('about')
+        about = try_encode(about)
         user = request_body.get('user')
+        user = try_encode(user)
         name = request_body.get('name')
+        name = try_encode(name)
 
         sql = """UPDATE User SET about = %s AND name = %s WHERE email = %s;"""
         args = (about, name, user)
@@ -155,17 +178,23 @@ class User:
         user = qs_dict['user'][0]
 
         # Since part
-        since_id = qs_dict.get('since_id', -1)
+        since_id = -1
+        if qs_dict.get('since_id'):
+            since_id = qs_dict['since_id'][0]
         since_sql = ""
         if since_id != -1:
             since_sql = """AND User.user > {}""".format(since_id)
 
         # Order part
-        order = qs_dict.get('order', 'desc')
+        order = 'desc'
+        if qs_dict['order']:
+            order = qs_dict['order'][0]
         order_sql = """ORDER BY date {}""".format(order)
 
         # Limit part
-        limit = qs_dict.get('limit', -1)
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
         limit_sql = ""
         if limit != -1:
             try:
@@ -220,17 +249,23 @@ class User:
         user = qs_dict['user'][0]
 
         # Since part
-        since_id = qs_dict.get('since_id', -1)
+        since_id = ""
+        if qs_dict.get('since_id'):
+            since_id = qs_dict['since_id'][0]
         since_sql = ""
-        if since_id != -1:
+        if since_id != "":
             since_sql = """AND User.user > {}""".format(since_id)
 
         # Order part
-        order = qs_dict.get('order', 'desc')
+        order = "desc"
+        if qs_dict.get('order'):
+            order = qs_dict['order'][0]
         order_sql = """ORDER BY date {}""".format(order)
 
         # Limit part
-        limit = qs_dict.get('limit', -1)
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
         limit_sql = ""
         if limit != -1:
             try:

@@ -23,10 +23,10 @@ class Forum:
     @staticmethod
     def create(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3, "response": "Wrong html method \
-                for 'forum.create'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'forum.create'"}, indent=4)]
 
         request_body = json.loads(request_body)
+
         name = request_body.get('name')
         name = try_encode(name)
         short_name = request_body.get('short_name')
@@ -61,9 +61,8 @@ class Forum:
                 return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
             sql = """SELECT follower FROM Follower WHERE following = %s"""
-            args = (user['email'])
             db = MyDatabase()
-            data = db.execute(sql, args)
+            data = db.execute(sql, user['email'])
 
             followers_list = list()
             for line in data:
@@ -71,16 +70,14 @@ class Forum:
             user['followers'] = followers_list
 
             sql = """SELECT following FROM Follower WHERE follower = %s"""
-            args = (user['email'])
-            data = db.execute(sql, args)
+            data = db.execute(sql, user['email'])
             following_list = list()
             for line in data:
                 following_list.append(line[0])
-            user['following'] = str_to_json(following_list)
+            user['following'] = following_list
 
             sql = """SELECT thread FROM Subscription WHERE subscriber = %s"""
-            args = (user['email'])
-            data = db.execute(sql, args)
+            data = db.execute(sql, user['email'])
             data_list = list()
             for line in data:
                 data_list.append(line[0])
@@ -94,6 +91,8 @@ class Forum:
     def list_posts(qs_dict):
         if not qs_dict.get('forum'):
             return [json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)]
+
+        forum = qs_dict['forum'][0]
 
         # Related part
         thread_related = False
@@ -115,19 +114,19 @@ class Forum:
         if qs_dict.get('since'):
             since = qs_dict['since'][0]
 
-        limit = ""
+        limit = -1
         if qs_dict.get('limit'):
             limit = qs_dict['limit'][0]
 
-        sort = ""
+        sort = "flat"
         if qs_dict.get('sort'):
             sort = qs_dict['sort'][0]
 
-        order = ""
+        order = "desc"
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
 
-        post_list = get_post_list(forum=qs_dict['forum'][0], since=since, limit=limit,
+        post_list = get_post_list(forum=forum, since=since, limit=limit,
                                   sort=sort, order=order)
 
         if not post_list:
@@ -136,16 +135,15 @@ class Forum:
         if not post_list[0]:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
-        post_list = list()
         for post in post_list:
             if user_related:
-                post['user'] = get_user_dict(post[1])
+                post['user'] = get_user_dict(post['user'])  # TODO
 
             if thread_related:
-                post['thread'] = get_thread_list(id_value=post[2])
+                post['thread'] = get_thread_list(id_value=post['thread'])  # TODO
 
             if forum_related:
-                post['forum'] = get_forum_dict(short_name=post[3])
+                post['forum'] = get_forum_dict(short_name=post['forum'])  # TODO
 
             post_list.append(post)
 
@@ -155,6 +153,8 @@ class Forum:
     def list_threads(qs_dict):
         if not qs_dict.get('forum'):
             return [json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)]
+
+        forum = qs_dict['forum'][0]
 
         # Since part
         since_sql = ''
@@ -191,16 +191,14 @@ class Forum:
                 elif related_value == 'user':
                     user_related = True
                 else:
-                    return [json.dumps({"code": 3, "response": "Wrong related value"},
-                                       indent=4)]
+                    return [json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)]
 
-        sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, \
-            date, slug FROM Thread \
-            WHERE forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql=since_sql,
-                                                                      ord_sql=order_sql, lim_sql=limit_sql)
+        sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, slug FROM Thread \
+            WHERE forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql=since_sql, ord_sql=order_sql,
+                                                                      lim_sql=limit_sql)
 
         db = MyDatabase()
-        data = db.execute(sql, (qs_dict['forum'][0]))
+        data = db.execute(sql, forum)
         if not data:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
@@ -242,7 +240,7 @@ class Forum:
             except ValueError:
                 return [json.dumps({"code": 3, "response": "Wrong since_id value"},
                                    indent=4)]
-            since_id_sql = """AND User.user >= '{}'""".format(since_id)
+            since_id_sql = """AND User.user >= {}""".format(since_id)
 
         # Limit part
         limit_sql = ''
