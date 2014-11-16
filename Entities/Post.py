@@ -172,13 +172,12 @@ class Post:
         thread_id = post['thread']
 
         if do_remove:
-            sql = """UPDATE Post SET isDeleted = 1 WHERE post = %s;"""
-            dec_posts_for_thread(thread_id)
+            remove_post(post_id, thread_id)
         else:
-            inc_posts_for_thread(thread_id)
             sql = """UPDATE Post SET isDeleted = 0 WHERE post = %s;"""
-        db = MyDatabase()
-        db.execute(sql, post_id, True)
+            db = MyDatabase()
+            db.execute(sql, post_id, True)
+            inc_posts_for_thread(thread_id)
 
         return [json.dumps({"code": 0, "response": {"post": post_id}}, indent=4)]
 

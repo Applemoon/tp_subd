@@ -151,7 +151,10 @@ class Thread:
 
         thread = request_body.get('thread')
         if not restore:
-            sql = """UPDATE Thread SET isDeleted = 1 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %s;"""
+            post_list = get_post_list(thread=thread)
+            for post in post_list:
+                remove_post(post['id'], thread)
         else:
             sql = """UPDATE Thread SET isDeleted = 0 WHERE thread = %s;"""
 

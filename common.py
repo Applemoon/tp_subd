@@ -240,3 +240,10 @@ def dec_posts_for_thread(thread_id):
     sql = """UPDATE Thread SET posts = posts - 1 WHERE thread = {};""".format(thread_id)
     db = MyDatabase()
     db.execute(sql, post=True)
+
+
+def remove_post(post_id, thread_id):
+    sql = """UPDATE Post SET isDeleted = 1 WHERE post = %s;"""
+    db = MyDatabase()
+    db.execute(sql, post_id, True)
+    dec_posts_for_thread(thread_id)

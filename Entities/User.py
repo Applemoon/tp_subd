@@ -167,7 +167,7 @@ class User:
         sql = """UPDATE User SET about = %s, name = %s WHERE email = %s;"""
         args = (about, name, user)
         db = MyDatabase()
-        db.execute(sql, args)
+        db.execute(sql, args, True)
         user_dict = get_user_dict(user)
         return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 
@@ -176,7 +176,7 @@ class User:
         if not qs_dict.get('user'):
             return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
 
-        user = qs_dict['user'][0]
+        user_email = qs_dict['user'][0]
 
         # Since part
         since_id = -1
@@ -190,7 +190,7 @@ class User:
         order = 'desc'
         if qs_dict['order']:
             order = qs_dict['order'][0]
-        order_sql = """ORDER BY date {}""".format(order)
+        order_sql = """ORDER BY User.name {}""".format(order)
 
         # Limit part
         limit = -1
@@ -209,9 +209,10 @@ class User:
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.follower = User.email \
             WHERE Follower.following = %s %s %s %s;"""
-        args = (user, since_sql, order_sql, limit_sql)
+
+        args = (user_email, since_sql, order_sql, limit_sql)
         db = MyDatabase()
-        user_list_sql = db.execute(sql, args, True)
+        user_list_sql = db.execute(sql, args)
         if not user_list_sql:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
         if not user_list_sql[0]:
@@ -229,14 +230,15 @@ class User:
 
             sql = """SELECT follower FROM Follower WHERE following = %s;"""
             db = MyDatabase()
-            user['followers'] = db.execute(sql, user)
+            user['followers'] = db.execute(sql, user_email)
 
             sql = """SELECT following FROM Follower WHERE follower = %s;"""
-            user['following'] = db.execute(sql, user)
+            db = MyDatabase()
+            user['following'] = db.execute(sql, user_email)
 
             sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
             db = MyDatabase()
-            user['subscriptions'] = db.execute(sql, user)
+            user['subscriptions'] = db.execute(sql, user_email)
 
             user_list.append(user)
 
@@ -247,7 +249,7 @@ class User:
         if not qs_dict.get('user'):
             return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
 
-        user = qs_dict['user'][0]
+        user_email = qs_dict['user'][0]
 
         # Since part
         since_id = ""
@@ -280,9 +282,9 @@ class User:
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.following = User.email \
             WHERE Follower.follower = %s %s %s %s;"""
-        args = (user, since_sql, order_sql, limit_sql)
+        args = (user_email, since_sql, order_sql, limit_sql)
         db = MyDatabase()
-        user_list_sql = db.execute(sql, args, True)
+        user_list_sql = db.execute(sql, args)
         if not user_list_sql:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
         if not user_list_sql[0]:
@@ -300,14 +302,15 @@ class User:
 
             sql = """SELECT follower FROM Follower WHERE following = %s;"""
             db = MyDatabase()
-            user['followers'] = db.execute(sql, user)
+            user['followers'] = db.execute(sql, user_email)
 
             sql = """SELECT following FROM Follower WHERE follower = %s;"""
-            user['following'] = db.execute(sql, user)
+            db = MyDatabase()
+            user['following'] = db.execute(sql, user_email)
 
             sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
             db = MyDatabase()
-            user['subscriptions'] = db.execute(sql, user)
+            user['subscriptions'] = db.execute(sql, user_email)
 
             user_list.append(user)
 

@@ -20,12 +20,12 @@ class MyDatabase:
         return self.cursor.fetchall()
 
     def clear(self):
-        self.execute("""TRUNCATE TABLE Forum;""")
-        self.execute("""TRUNCATE TABLE User;""")
+        self.execute("""TRUNCATE TABLE Forum;""", post=True)
+        self.execute("""TRUNCATE TABLE User;""", post=True)
         self.execute("""TRUNCATE TABLE Post;""")
-        self.execute("""TRUNCATE TABLE Thread;""")
-        self.execute("""TRUNCATE TABLE Subscription;""")
-        self.execute("""TRUNCATE TABLE Follower;""")
+        self.execute("""TRUNCATE TABLE Thread;""", post=True)
+        self.execute("""TRUNCATE TABLE Subscription;""", post=True)
+        self.execute("""TRUNCATE TABLE Follower;""", post=True)
 
         return [json.dumps({"code": 0, "response": "OK"})]
 
