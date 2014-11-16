@@ -45,8 +45,8 @@ class User:
             is_anonymous = 1
         else:
             is_anonymous = 0
-        sql = """INSERT INTO User (username, about, name, email, isAnonymous) \
-            VALUES (%s, %s, %s, %s, %s);"""
+
+        sql = """INSERT INTO User (username, about, name, email, isAnonymous) VALUES (%s, %s, %s, %s, %s);"""
         args = (username, about, name, email, is_anonymous)
         db = MyDatabase()
 
@@ -57,9 +57,8 @@ class User:
             if error_code == MYSQL_DUPLICATE_ENTITY_ERROR:
                 return [json.dumps({"code": 5,
                                     "response": "This user already exists"}, indent=4)]
-            else:
-                return [json.dumps({"code": 4,
-                                    "response": "Oh, we have some really bad error"}, indent=4)]
+            return [json.dumps({"code": 4,
+                                "response": "Oh, we have some really bad error"}, indent=4)]
 
         user_dict = get_user_dict(email)
 
@@ -99,6 +98,7 @@ class User:
 
         follower = request_body.get('follower')
         followee = request_body.get('followee')
+
         sql = """INSERT INTO Follower (follower, following) VALUES (%s, %s);"""
         args = (follower, followee)
         db = MyDatabase()
@@ -116,6 +116,7 @@ class User:
 
         follower = request_body.get('follower')
         followee = request_body.get('followee')
+
         sql = """DELETE FROM Follower WHERE follower = %s AND following = %s;"""
         args = (follower, followee)
         db = MyDatabase()

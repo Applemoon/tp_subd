@@ -45,60 +45,23 @@ class Thread:
         key_value = qs_dict[key][0]
 
         # Since part
-        since_sql = ''
+        since = ""
         if qs_dict.get('since'):
-            since_sql = """AND Thread.date >= '{}'""".format(qs_dict['since'][0])
-
-        # Limit part
-        limit_sql = ''
-        if qs_dict.get('limit'):
-            limit = qs_dict['limit'][0]
-            try:
-                limit = int(limit)
-            except ValueError:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            if limit < 0:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            limit_sql = """LIMIT {}""".format(limit)
+            since = qs_dict['since'][0]
 
         # Order part
-        order = 'desc'
+        order = ""
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
-            if order != 'asc' and order != 'desc':
-                return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
-        order_sql = """ORDER BY date {}""".format(order)
 
-        sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, \
-            date, slug FROM Thread"""
+        # Limit part
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
         if key == "forum":
-            sql += """ WHERE forum = %s"""
+            thread_list = get_thread_list(forum=key_value, since=since, order=order, limit=limit)
         else:
-            sql += """ WHERE user = %s"""
-
-        sql += """ {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql=since_sql,
-                                                            ord_sql=order_sql, lim_sql=limit_sql)
-
-        db = MyDatabase()
-        data = db.execute(sql, key_value)
-        if not data:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-
-        thread_list = list()
-        for thread in data:
-            thread_dict = dict()
-            thread_dict['id'] = str_to_json(thread[0])
-            thread_dict['title'] = str_to_json(thread[1])
-            thread_dict['user'] = str_to_json(thread[2])
-            thread_dict['message'] = str_to_json(thread[3])
-            thread_dict['forum'] = str_to_json(thread[4])
-            thread_dict['isDeleted'] = str_to_json(thread[5], True)
-            thread_dict['isClosed'] = str_to_json(thread[6], True)
-            date = thread[7].strftime('%Y-%m-%d %H:%M:%S')
-            thread_dict['date'] = str_to_json(date)
-            thread_dict['slug'] = str_to_json(thread[8])
-
-            thread_list.append(thread_dict)
+            thread_list = get_thread_list(user=key_value, since=since, order=order, limit=limit)
 
         return [json.dumps({"code": 0, "response": thread_list}, indent=4)]
 
@@ -257,6 +220,7 @@ class Thread:
         request_body = json.loads(request_body)
 
         message = request_body.get('message')
+        message = try_encode(message)
         slug = request_body.get('slug')
         thread = request_body.get('thread')
 

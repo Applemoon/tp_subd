@@ -26,18 +26,26 @@ class Post:
 
     @staticmethod
     def list(qs_dict):
-        if not qs_dict.get('forum') or not qs_dict.get('thread'):
-            return [json.dumps({"code": 2, "response": "No 'forum' or 'thread' key"},
-                               indent=4)]
+        if not qs_dict.get('forum') and not qs_dict.get('thread'):
+            return [json.dumps({"code": 2, "response": "No 'forum' or 'thread' key"}, indent=4)]
 
-        forum = qs_dict['forum'][0]
-        thread = qs_dict['thread'][0]
-        since = qs_dict.get('since', '')
-        limit = qs_dict.get('limit', -1)
-        order = qs_dict.get('order', 'desc')
-        if forum != "":
+        since = ""
+        if qs_dict.get('since'):
+            since = qs_dict['since'][0]
+
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
+
+        order = ""
+        if qs_dict.get('order'):
+            order = qs_dict['order'][0]
+
+        if qs_dict.get('forum'):
+            forum = qs_dict['forum'][0]
             post_list = get_post_list(forum=forum, since=since, limit=limit, order=order)
         else:
+            thread = qs_dict['thread'][0]
             post_list = get_post_list(thread=thread, since=since, limit=limit, order=order)
 
         return [json.dumps({"code": 0, "response": post_list}, indent=4)]
@@ -45,8 +53,7 @@ class Post:
     @staticmethod
     def create(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'post.create'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'post.create'"}, indent=4)]
 
         request_body = json.loads(request_body)
 
@@ -87,20 +94,23 @@ class Post:
         else:
             is_deleted = 0
 
-        sql = """INSERT INTO Post (user, thread, forum, message, parent, date, isSpam, \
-            isEdited, isDeleted, isHighlighted, isApproved) \
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
-        args = (user, thread, forum, message, parent, date, is_spam, is_edited,
-                is_deleted, is_highlighted, is_approved)
+        sql = """INSERT INTO Post (user, thread, forum, message, parent, date, isSpam, isEdited, isDeleted, \
+            isHighlighted, isApproved) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
+        args = (user, thread, forum, message, parent, date, is_spam, is_edited, is_deleted, is_highlighted,
+                is_approved)
 
         db = MyDatabase()
 
+        post_list = list()
         try:
             db.execute(sql, args, True)
         except MySQLdb.IntegrityError, message:
             print message[0]
-        finally:
+            post_list = get_post_list(user=user, date=date)
+        else:
             post_list = get_post_list(id_value=db.cursor.lastrowid)
+            inc_posts_for_thread(thread)
+        finally:
             if post_list == list():
                 return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
             if not post_list[0]:
@@ -134,13 +144,12 @@ class Post:
                 elif related_value == 'thread':
                     thread_related = True
                 else:
-                    return [json.dumps({"code": 3, "response": "Wrong related value"},
-                                       indent=4)]
+                    return [json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)]
 
         if thread_related:
             thread_list = get_thread_list(id_value=post['thread'])
             if thread_list == list():
-                return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
+                post['thread'] = dict()
             else:
                 post['thread'] = thread_list[0]
 
@@ -155,15 +164,18 @@ class Post:
     @staticmethod
     def remove(html_method, request_body, do_remove=True):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'post.remove'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'post.remove/restore'"}, indent=4)]
 
         request_body = json.loads(request_body)
         post_id = request_body.get('post')
+        post = get_post_list(id_value=post_id)[0]
+        thread_id = post['thread']
 
         if do_remove:
             sql = """UPDATE Post SET isDeleted = 1 WHERE post = %s;"""
+            dec_posts_for_thread(thread_id)
         else:
+            inc_posts_for_thread(thread_id)
             sql = """UPDATE Post SET isDeleted = 0 WHERE post = %s;"""
         db = MyDatabase()
         db.execute(sql, post_id, True)
@@ -176,30 +188,30 @@ class Post:
     @staticmethod
     def update(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'post.remove'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'post.update'"}, indent=4)]
 
         request_body = json.loads(request_body)
         post_id = request_body.get('post')
         message = request_body.get('message')
+        message = try_encode(message)
 
         sql = """UPDATE Post SET message = %s WHERE post = %s;"""
 
         db = MyDatabase()
         db.execute(sql, (message, post_id), True)
 
-        post = get_post_list(id_value=post_id)
-        if not post:
+        post_list = get_post_list(id_value=post_id)
+        if not post_list:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-        if not post[0]:
+        if not post_list[0]:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
-        return [json.dumps({"code": 0, "response": post[0]}, indent=4)]
+        return [json.dumps({"code": 0, "response": post_list[0]}, indent=4)]
 
     @staticmethod
     def vote(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3, "response": "Wrong html method for 'post.remove'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'post.vote'"}, indent=4)]
 
         request_body = json.loads(request_body)
         post_id = request_body.get('post')

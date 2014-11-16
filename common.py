@@ -50,7 +50,7 @@ def get_forum_dict(short_name="", id_value=""):
 
 
 def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1, sort='flat',
-                  order='desc'):
+                  order='desc', date=""):
     # WHERE part
     if id_value != "":
         where_sql = "post = {}".format(id_value)
@@ -59,8 +59,11 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
     elif thread != "":
         where_sql = "thread = {}".format(thread)
     elif user != "":
-        where_sql = "user = '{user_value}'".format(
-            user_value=user)
+        if date != "":
+            where_sql = "user = '{user_value}' AND date = '{date_value}'".format(user_value=user,
+                                                                                 date_value=date)
+        else:
+            where_sql = "user = '{user_value}'".format(user_value=user)
     else:
         print "Can't find search field in getPostList"
         return list()
@@ -95,7 +98,7 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
         return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
     order_sql = """ORDER BY date {}""".format(order)
 
-    sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points \
+    sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
         isSpam, isEdited, isDeleted, isHighlighted, isApproved FROM Post \
         WHERE {where_value} {since_value} {order_value} {sort_value} {limit_value};""".format(
         where_value=where_sql,
@@ -135,21 +138,46 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
     return post_list
 
 
-def get_thread_list(id_value="", title="", forum="", user=""):
+def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1, order="desc"):
     if id_value != "":
-        sql_where = "thread = {}".format(id_value)
+        where_sql = "thread = {}".format(id_value)
     elif title != "":
-        sql_where = "title = '{}'".format(title)
+        where_sql = "title = '{}'".format(title)
     elif forum != "":
-        sql_where = "forum = '{}'".format(forum)
+        where_sql = "forum = '{}'".format(forum)
     elif user != "":
-        sql_where = "user = '{}'".format(user)
+        where_sql = "user = '{}'".format(user)
     else:
         print "Can't find search field in getThreadList"
         return list()
 
-    sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, \
-        slug, likes, dislikes, points FROM Thread WHERE {};""".format(sql_where)
+    # Since part
+    since_sql = ""
+    if since != "":
+        since_sql = """ AND date >= '{}'""".format(since)
+
+    # Order part
+    if order != 'asc' and order != 'desc':
+        print "Wrong order value"
+        return list()
+    order_sql = """ ORDER BY date {}""".format(order)
+
+    # Limit part
+    limit_sql = ""
+    if limit != -1:
+        try:
+            limit = int(limit)
+        except ValueError:
+            print "Wrong limit value"
+            return list()
+        if limit < 0:
+            print "Wrong limit value"
+            return list()
+        limit_sql = """ LIMIT {}""".format(limit)
+
+    sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, slug, likes, dislikes, \
+        points, posts FROM Thread WHERE {where_value} {since_value} {order_value} {limit_value};""".format(
+        where_value=where_sql, since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
     db = MyDatabase()
     thread_list_sql = db.execute(sql)
@@ -159,7 +187,6 @@ def get_thread_list(id_value="", title="", forum="", user=""):
     thread_list = list()
     for thread_sql in thread_list_sql:
         thread = dict()
-        # thread['thread'] = str_to_json(thread_sql[0])
         thread['id'] = str_to_json(thread_sql[0])
         thread['title'] = str_to_json(thread_sql[1])
         thread['user'] = str_to_json(thread_sql[2])
@@ -173,6 +200,7 @@ def get_thread_list(id_value="", title="", forum="", user=""):
         thread['likes'] = str_to_json(thread_sql[9])
         thread['dislikes'] = str_to_json(thread_sql[10])
         thread['points'] = str_to_json(thread_sql[11])
+        thread['posts'] = str_to_json(thread_sql[12])
 
         thread_list.append(thread)
 
@@ -200,3 +228,15 @@ def get_user_dict(email):
     user["about"] = str_to_json(user_sql[5])
 
     return user
+
+
+def inc_posts_for_thread(thread_id):
+    sql = """UPDATE Thread SET posts = posts + 1 WHERE thread = {};""".format(thread_id)
+    db = MyDatabase()
+    db.execute(sql, post=True)
+
+
+def dec_posts_for_thread(thread_id):
+    sql = """UPDATE Thread SET posts = posts - 1 WHERE thread = {};""".format(thread_id)
+    db = MyDatabase()
+    db.execute(sql, post=True)

@@ -31,3 +31,19 @@ elif val == "usercreatewrong":
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     r = requests.post(url, data=json.dumps(data), headers=headers)
     print r
+if val == "postcreate":
+    url = "http://localhost:8000/db/api/post/create"
+    data = {"isApproved": True,
+            "user": "example@mail.ru",
+            "date": "2014-01-01 00:00:01",
+            "message": "my message 1",
+            "isSpam": False,
+            "isHighlighted": True,
+            "thread": 4,
+            "forum": "forum2",
+            "isDeleted": False,
+            "isEdited": True}
+
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    r = requests.post(url, data=json.dumps(data), headers=headers)
+    print r

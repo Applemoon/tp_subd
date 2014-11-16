@@ -41,8 +41,7 @@ class Forum:
         except MySQLdb.IntegrityError, message:
             print message[0]
         finally:
-            forum_dict = get_forum_dict(id_value=db.get_last_row_id())
-
+            forum_dict = get_forum_dict(short_name=short_name)
             return [json.dumps({"code": 0, "response": forum_dict}, indent=4)]
 
     @staticmethod
@@ -60,7 +59,7 @@ class Forum:
             if user == dict():
                 return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
-            sql = """SELECT follower FROM Follower WHERE following = %s"""
+            sql = """SELECT follower FROM Follower WHERE following = %s;"""
             db = MyDatabase()
             data = db.execute(sql, user['email'])
 
@@ -69,14 +68,14 @@ class Forum:
                 followers_list.append(line[0])
             user['followers'] = followers_list
 
-            sql = """SELECT following FROM Follower WHERE follower = %s"""
+            sql = """SELECT following FROM Follower WHERE follower = %s;"""
             data = db.execute(sql, user['email'])
             following_list = list()
             for line in data:
                 following_list.append(line[0])
             user['following'] = following_list
 
-            sql = """SELECT thread FROM Subscription WHERE subscriber = %s"""
+            sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
             data = db.execute(sql, user['email'])
             data_list = list()
             for line in data:
@@ -127,8 +126,7 @@ class Forum:
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
 
-        post_list = get_post_list(forum=forum, since=since, limit=limit,
-                                  sort=sort, order=order)
+        post_list = get_post_list(forum=forum, since=since, limit=limit, sort=sort, order=order)
 
         if not post_list:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
@@ -138,13 +136,13 @@ class Forum:
 
         for post in post_list:
             if user_related:
-                post['user'] = get_user_dict(post['user'])  # TODO
+                post['user'] = get_user_dict(post['user'])
 
             if thread_related:
-                post['thread'] = get_thread_list(id_value=post['thread'])  # TODO
+                post['thread'] = get_thread_list(id_value=post['thread'])
 
             if forum_related:
-                post['forum'] = get_forum_dict(short_name=post['forum'])  # TODO
+                post['forum'] = get_forum_dict(short_name=post['forum'])
 
         return [json.dumps({"code": 0, "response": post_list}, indent=4)]
 
@@ -156,29 +154,20 @@ class Forum:
         forum = qs_dict['forum'][0]
 
         # Since part
-        since_sql = ''
+        since = ""
         if qs_dict.get('since'):
-            since_sql = """AND date >= '{}'""".format(qs_dict['since'][0])
-
-        # Limit part
-        limit_sql = ''
-        if qs_dict.get('limit'):
-            limit = qs_dict['limit'][0]
-            try:
-                limit = int(limit)
-            except ValueError:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            if limit < 0:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            limit_sql = """LIMIT {}""".format(limit)
+            since = qs_dict['since'][0]
 
         # Order part
-        order = 'desc'
+        order = ""
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
-            if order != 'asc' and order != 'desc':
-                return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
-        order_sql = """ORDER BY date {}""".format(order)
+
+        # Limit part
+        limit = -1
+        if qs_dict.get('limit'):
+            limit = qs_dict['limit'][0]
+        thread_list = get_thread_list(forum=forum, since=since, order=order, limit=limit)
 
         # Related part
         forum_related = False
@@ -192,36 +181,12 @@ class Forum:
                 else:
                     return [json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)]
 
-        sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, slug FROM Thread \
-            WHERE forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(snc_sql=since_sql, ord_sql=order_sql,
-                                                                      lim_sql=limit_sql)
-
-        db = MyDatabase()
-        data = db.execute(sql, forum)
-        if not data:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-
-        thread_list = list()
-        for thread in data:
-            thread_dict = dict()
-            thread_dict['id'] = str_to_json(thread[0])
-            thread_dict['title'] = str_to_json(thread[1])
-            thread_dict['user'] = str_to_json(thread[2])
-            thread_dict['message'] = str_to_json(thread[3])
-            thread_dict['forum'] = str_to_json(thread[4])
-            thread_dict['isDeleted'] = str_to_json(thread[5], True)
-            thread_dict['isClosed'] = str_to_json(thread[6], True)
-            date = thread[7].strftime('%Y-%m-%d %H:%M:%S')
-            thread_dict['date'] = str_to_json(date)
-            thread_dict['slug'] = str_to_json(thread[8])
-
+        for thread in thread_list:
             if user_related:
-                thread_dict['user'] = get_user_dict(thread_dict['user'])
+                thread['user'] = get_user_dict(thread['user'])
 
             if forum_related:
-                thread_dict['forum'] = get_forum_dict(short_name=thread_dict['forum'])
-
-            thread_list.append(thread_dict)
+                thread['forum'] = get_forum_dict(short_name=thread['forum'])
 
         return [json.dumps({"code": 0, "response": thread_list}, indent=4)]
 
@@ -261,13 +226,10 @@ class Forum:
                 return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
         order_sql = """ORDER BY User.name {}""".format(order)
 
-        sql = """SELECT User.user, User.email, User.name, User.username, \
-            User.isAnonymous, User.about FROM User \
+        sql = """SELECT User.user, User.email, User.name, User.username, User.isAnonymous, User.about FROM User \
             JOIN Post ON Post.user = User.email \
             WHERE Post.forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(
-            snc_sql=since_id_sql,
-            lim_sql=limit_sql,
-            ord_sql=order_sql)
+            snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
         args = (qs_dict['forum'][0])
 
         db = MyDatabase()
