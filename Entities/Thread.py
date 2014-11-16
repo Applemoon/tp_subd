@@ -260,7 +260,7 @@ class Thread:
         slug = request_body.get('slug')
         thread = request_body.get('thread')
 
-        sql = """UPDATE Thread SET message = %s AND slug = %s WHERE thread = %s;"""
+        sql = """UPDATE Thread SET message = %s, slug = %s WHERE thread = %s;"""
         args = (message, slug, thread)
         db = MyDatabase()
         db.execute(sql, args, True)
@@ -312,9 +312,9 @@ class Thread:
         thread = request_body.get('thread')
 
         if vote == 1:
-            sql = """UPDATE Thread SET likes = likes + 1 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %s;"""
         else:
-            sql = """UPDATE Thread SET dislikes = dislikes + 1 WHERE thread = %s;"""
+            sql = """UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %s;"""
 
         db = MyDatabase()
         db.execute(sql, thread, True)

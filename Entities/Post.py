@@ -159,7 +159,6 @@ class Post:
                                 "response": "Wrong html method for 'post.remove'"}, indent=4)]
 
         request_body = json.loads(request_body)
-
         post_id = request_body.get('post')
 
         if do_remove:
@@ -181,7 +180,6 @@ class Post:
                                 "response": "Wrong html method for 'post.remove'"}, indent=4)]
 
         request_body = json.loads(request_body)
-
         post_id = request_body.get('post')
         message = request_body.get('message')
 
@@ -204,16 +202,15 @@ class Post:
             return [json.dumps({"code": 3, "response": "Wrong html method for 'post.remove'"}, indent=4)]
 
         request_body = json.loads(request_body)
-
         post_id = request_body.get('post')
         vote = request_body.get('vote')
         if vote != 1 and vote != -1:
             return [json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)]
 
         if vote == 1:
-            sql = """UPDATE Post SET likes = likes + 1 WHERE post = %s;"""
+            sql = """UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %s;"""
         else:
-            sql = """UPDATE Post SET dislikes = dislikes + 1 WHERE post = %s;"""
+            sql = """UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %s;"""
 
         db = MyDatabase()
         db.execute(sql, post_id, True)

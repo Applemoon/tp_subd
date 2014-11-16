@@ -95,7 +95,7 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
         return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
     order_sql = """ORDER BY date {}""".format(order)
 
-    sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, \
+    sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points \
         isSpam, isEdited, isDeleted, isHighlighted, isApproved FROM Post \
         WHERE {where_value} {since_value} {order_value} {sort_value} {limit_value};""".format(
         where_value=where_sql,
@@ -114,7 +114,7 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
     post_list = list()
     for post_sql in post_list_sql:
         post = dict()
-        post['post'] = str_to_json(post_sql[0])
+        post['id'] = str_to_json(post_sql[0])
         post['user'] = str_to_json(post_sql[1])
         post['thread'] = str_to_json(post_sql[2])
         post['forum'] = str_to_json(post_sql[3])
@@ -123,12 +123,12 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
         post['date'] = post_sql[6].strftime('%Y-%m-%d %H:%M:%S')
         post['likes'] = str_to_json(post_sql[7])
         post['dislikes'] = str_to_json(post_sql[8])
-        post['point'] = post['likes'] - post['dislikes']
-        post['isSpam'] = str_to_json(post_sql[9], True)
-        post['isEdited'] = str_to_json(post_sql[10], True)
-        post['isDeleted'] = str_to_json(post_sql[11], True)
-        post['isHighlighted'] = str_to_json(post_sql[12], True)
-        post['isApproved'] = str_to_json(post_sql[13], True)
+        post['points'] = str_to_json(post_sql[9])
+        post['isSpam'] = str_to_json(post_sql[10], True)
+        post['isEdited'] = str_to_json(post_sql[11], True)
+        post['isDeleted'] = str_to_json(post_sql[12], True)
+        post['isHighlighted'] = str_to_json(post_sql[13], True)
+        post['isApproved'] = str_to_json(post_sql[14], True)
 
         post_list.append(post)
 
@@ -159,7 +159,8 @@ def get_thread_list(id_value="", title="", forum="", user=""):
     thread_list = list()
     for thread_sql in thread_list_sql:
         thread = dict()
-        thread['thread'] = str_to_json(thread_sql[0])
+        # thread['thread'] = str_to_json(thread_sql[0])
+        thread['id'] = str_to_json(thread_sql[0])
         thread['title'] = str_to_json(thread_sql[1])
         thread['user'] = str_to_json(thread_sql[2])
         thread['message'] = str_to_json(thread_sql[3])

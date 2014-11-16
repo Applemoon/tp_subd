@@ -53,8 +53,8 @@ class User:
         try:
             db.execute(sql, args, True)
         except MySQLdb.IntegrityError, message:
-            errorcode = message[0]
-            if errorcode == MYSQL_DUPLICATE_ENTITY_ERROR:
+            error_code = message[0]
+            if error_code == MYSQL_DUPLICATE_ENTITY_ERROR:
                 return [json.dumps({"code": 5,
                                     "response": "This user already exists"}, indent=4)]
             else:
@@ -163,7 +163,7 @@ class User:
         name = request_body.get('name')
         name = try_encode(name)
 
-        sql = """UPDATE User SET about = %s AND name = %s WHERE email = %s;"""
+        sql = """UPDATE User SET about = %s, name = %s WHERE email = %s;"""
         args = (about, name, user)
         db = MyDatabase()
         db.execute(sql, args)

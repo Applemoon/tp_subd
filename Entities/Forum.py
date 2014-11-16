@@ -93,6 +93,7 @@ class Forum:
             return [json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)]
 
         forum = qs_dict['forum'][0]
+        forum = try_encode(forum)
 
         # Related part
         thread_related = False
@@ -144,8 +145,6 @@ class Forum:
 
             if forum_related:
                 post['forum'] = get_forum_dict(short_name=post['forum'])  # TODO
-
-            post_list.append(post)
 
         return [json.dumps({"code": 0, "response": post_list}, indent=4)]
 
