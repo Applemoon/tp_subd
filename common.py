@@ -209,9 +209,8 @@ def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1
 
 def get_user_dict(email):
     sql = """SELECT user, email, name, username, isAnonymous, about FROM User WHERE email = %s;"""
-    args = email
     db = MyDatabase()
-    user_list_sql = db.execute(sql, args)
+    user_list_sql = db.execute(sql, email)
     if not user_list_sql:
         return dict()
     if not user_list_sql[0]:
@@ -242,8 +241,13 @@ def dec_posts_for_thread(thread_id):
     db.execute(sql, post=True)
 
 
-def remove_post(post_id, thread_id):
+def remove_post(post_id):
     sql = """UPDATE Post SET isDeleted = 1 WHERE post = %s;"""
     db = MyDatabase()
     db.execute(sql, post_id, True)
-    dec_posts_for_thread(thread_id)
+
+
+def restore_post(post_id):
+    sql = """UPDATE Post SET isDeleted = 0 WHERE post = %s;"""
+    db = MyDatabase()
+    db.execute(sql, post_id, True)

@@ -142,7 +142,7 @@ class Thread:
         return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod
-    def remove(html_method, request_body, restore=False):
+    def remove(html_method, request_body):
         if html_method != 'POST':
             return [json.dumps({"code": 3,
                                 "response": "Wrong html method for 'thread.remove/restore'"}, indent=4)]
@@ -150,14 +150,10 @@ class Thread:
         request_body = json.loads(request_body)
 
         thread = request_body.get('thread')
-        if not restore:
-            sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %s;"""
-            post_list = get_post_list(thread=thread)
-            for post in post_list:
-                remove_post(post['id'], thread)
-        else:
-            sql = """UPDATE Thread SET isDeleted = 0 WHERE thread = %s;"""
-
+        sql = """UPDATE Thread SET isDeleted = 1 WHERE thread = %s;"""
+        post_list = get_post_list(thread=thread)
+        for post in post_list:
+            remove_post(post['id'])
         db = MyDatabase()
         db.execute(sql, thread, True)
 
@@ -166,8 +162,7 @@ class Thread:
     @staticmethod
     def open(html_method, request_body, close=False):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'thread.open/close'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.open'"}, indent=4)]
 
         request_body = json.loads(request_body)
 
@@ -184,11 +179,29 @@ class Thread:
 
     @staticmethod
     def close(html_method, request_body):
+        if html_method != 'POST':
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.close'"}, indent=4)]
+
         return Thread.open(html_method, request_body, True)
 
     @staticmethod
     def restore(html_method, request_body):
-        return Thread.remove(html_method, request_body, True)
+        if html_method != 'POST':
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.restore'"}, indent=4)]
+
+        request_body = json.loads(request_body)
+
+        thread = request_body.get('thread')
+
+        sql = """UPDATE Thread SET isDeleted = 0 WHERE thread = %s;"""
+        db = MyDatabase()
+        db.execute(sql, thread, True)
+
+        post_list = get_post_list(thread=thread)
+        for post in post_list:
+            restore_post(post['id'])
+
+        return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod
     def list_posts(qs_dict):
@@ -217,8 +230,7 @@ class Thread:
     @staticmethod
     def update(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'thread.update'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.update'"}, indent=4)]
 
         request_body = json.loads(request_body)
 
@@ -270,8 +282,7 @@ class Thread:
     @staticmethod
     def vote(html_method, request_body):
         if html_method != 'POST':
-            return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'thread.vote'"}, indent=4)]
+            return [json.dumps({"code": 3, "response": "Wrong html method for 'thread.vote'"}, indent=4)]
 
         request_body = json.loads(request_body)
 

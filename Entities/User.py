@@ -75,16 +75,26 @@ class User:
         sql = """SELECT follower FROM Follower WHERE following = %s;"""
         db = MyDatabase()
         followers_list = db.execute(sql, email)
-        user_dict['followers'] = followers_list
+        if not followers_list:
+            user_dict['followers'] = list()
+        else:
+            user_dict['followers'] = followers_list[0]
 
         sql = """SELECT following FROM Follower WHERE follower = %s;"""
         db = MyDatabase()
         following_list = db.execute(sql, email)
-        user_dict['following'] = following_list
+        if not following_list:
+            user_dict['following'] = list()
+        else:
+            user_dict['following'] = following_list[0]
 
         sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
         db = MyDatabase()
-        user_dict['subscriptions'] = db.execute(sql, email)
+        subscriptions_list = db.execute(sql, email)
+        if not subscriptions_list:
+            user_dict['subscriptions'] = list()
+        else:
+            user_dict['subscriptions'] = subscriptions_list[0]
 
         return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 
