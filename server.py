@@ -1,5 +1,5 @@
 from wsgiref.simple_server import make_server, demo_app
-from urlparse import urlparse, parse_qs
+from urlparse import parse_qs
 import json
 
 from Entities.MyDatabase import MyDatabase
@@ -25,8 +25,7 @@ def subd_server_app(environ, start_response):
 
     if not path.startswith('/db/api/'):
         return [json.dumps({"code": 3,
-                            "response": "Url should be like \'/db/api/{{entity}}/{{method}}/\'"},
-                           indent=4)]
+                            "response": "Url should be like \'/db/api/{{entity}}/{{method}}/\'"}, indent=4)]
 
     if path_list[3].lower() == 'clear':
         db = MyDatabase()

@@ -72,29 +72,9 @@ class User:
         email = qs_dict['user'][0]
         user_dict = get_user_dict(email)
 
-        sql = """SELECT follower FROM Follower WHERE following = %s;"""
-        db = MyDatabase()
-        followers_list = db.execute(sql, email)
-        if not followers_list:
-            user_dict['followers'] = list()
-        else:
-            user_dict['followers'] = followers_list[0]
-
-        sql = """SELECT following FROM Follower WHERE follower = %s;"""
-        db = MyDatabase()
-        following_list = db.execute(sql, email)
-        if not following_list:
-            user_dict['following'] = list()
-        else:
-            user_dict['following'] = following_list[0]
-
-        sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
-        db = MyDatabase()
-        subscriptions_list = db.execute(sql, email)
-        user_dict['subscriptions'] = list()
-        if subscriptions_list:
-            for thread in subscriptions_list:
-                user_dict['subscriptions'].append(thread[0])
+        user_dict['followers'] = get_followers_list(email)
+        user_dict['following'] = get_following_list(email)
+        user_dict['subscriptions'] = get_subscribed_threads_list(email)
 
         return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 
@@ -216,13 +196,17 @@ class User:
                 return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
             limit_sql = """LIMIT {}""".format(limit)
 
+        # sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
+        #     JOIN Follower ON Follower.follower = User.email \
+        #     WHERE Follower.following = %s %s %s %s;"""
+        # TODO
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.follower = User.email \
-            WHERE Follower.following = %s %s %s %s;"""
+            WHERE Follower.following = %s {since_value} {order_value} {limit_value};""".format(
+            since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
-        args = (user_email, since_sql, order_sql, limit_sql)
         db = MyDatabase()
-        user_list_sql = db.execute(sql, args)
+        user_list_sql = db.execute(sql, user_email)
         if not user_list_sql:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
         if not user_list_sql[0]:
@@ -237,18 +221,9 @@ class User:
             user['isAnonymous'] = str_to_json(user_sql[3])
             user['name'] = str_to_json(user_sql[4])
             user['username'] = str_to_json(user_sql[5])
-
-            sql = """SELECT follower FROM Follower WHERE following = %s;"""
-            db = MyDatabase()
-            user['followers'] = db.execute(sql, user_email)
-
-            sql = """SELECT following FROM Follower WHERE follower = %s;"""
-            db = MyDatabase()
-            user['following'] = db.execute(sql, user_email)
-
-            sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
-            db = MyDatabase()
-            user['subscriptions'] = db.execute(sql, user_email)
+            user['followers'] = get_followers_list(user['email'])
+            user['following'] = get_following_list(user['email'])
+            user['subscriptions'] = get_subscribed_threads_list(user['email'])
 
             user_list.append(user)
 
@@ -273,7 +248,7 @@ class User:
         order = "desc"
         if qs_dict.get('order'):
             order = qs_dict['order'][0]
-        order_sql = """ORDER BY date {}""".format(order)
+        order_sql = """ORDER BY name {}""".format(order)
 
         # Limit part
         limit = -1
@@ -291,10 +266,11 @@ class User:
 
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
             JOIN Follower ON Follower.following = User.email \
-            WHERE Follower.follower = %s %s %s %s;"""
-        args = (user_email, since_sql, order_sql, limit_sql)
+            WHERE Follower.follower = %s {since_value} {order_value} {limit_value};""".format(
+            since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
+
         db = MyDatabase()
-        user_list_sql = db.execute(sql, args)
+        user_list_sql = db.execute(sql, user_email)
         if not user_list_sql:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
         if not user_list_sql[0]:
@@ -309,18 +285,9 @@ class User:
             user['isAnonymous'] = str_to_json(user_sql[3])
             user['name'] = str_to_json(user_sql[4])
             user['username'] = str_to_json(user_sql[5])
-
-            sql = """SELECT follower FROM Follower WHERE following = %s;"""
-            db = MyDatabase()
-            user['followers'] = db.execute(sql, user_email)
-
-            sql = """SELECT following FROM Follower WHERE follower = %s;"""
-            db = MyDatabase()
-            user['following'] = db.execute(sql, user_email)
-
-            sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
-            db = MyDatabase()
-            user['subscriptions'] = db.execute(sql, user_email)
+            user['followers'] = get_followers_list(user_email)
+            user['following'] = get_following_list(user_email)
+            user['subscriptions'] = get_subscribed_threads_list(user_email)
 
             user_list.append(user)
 

@@ -251,3 +251,35 @@ def restore_post(post_id):
     sql = """UPDATE Post SET isDeleted = 0 WHERE post = %s;"""
     db = MyDatabase()
     db.execute(sql, post_id, True)
+
+
+def get_followers_list(email):
+    sql = """SELECT follower FROM Follower WHERE following = %s;"""
+    db = MyDatabase()
+    followers_list = db.execute(sql, email)
+    if not followers_list:
+        return list()
+
+    return followers_list[0]
+
+
+def get_following_list(email):
+    sql = """SELECT following FROM Follower WHERE follower = %s;"""
+    db = MyDatabase()
+    following_list = db.execute(sql, email)
+    if not following_list:
+        return list()
+
+    return following_list[0]
+
+
+def get_subscribed_threads_list(email):
+    sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
+    db = MyDatabase()
+    subscriptions_list = db.execute(sql, email)
+    result = list()
+    if subscriptions_list:
+        for thread in subscriptions_list:
+            result.append(thread[0])
+
+    return result

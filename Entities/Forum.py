@@ -107,8 +107,7 @@ class Forum:
                 elif related_value == 'user':
                     user_related = True
                 else:
-                    return [json.dumps({"code": 3, "response": "Wrong related value"},
-                                       indent=4)]
+                    return [json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)]
 
         since = ""
         if qs_dict.get('since'):
@@ -130,7 +129,6 @@ class Forum:
 
         if not post_list:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-
         if not post_list[0]:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
@@ -139,7 +137,7 @@ class Forum:
                 post['user'] = get_user_dict(post['user'])
 
             if thread_related:
-                post['thread'] = get_thread_list(id_value=post['thread'])
+                post['thread'] = get_thread_list(id_value=post['thread'])[0]
 
             if forum_related:
                 post['forum'] = get_forum_dict(short_name=post['forum'])
