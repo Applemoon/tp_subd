@@ -91,10 +91,10 @@ class User:
         sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
         db = MyDatabase()
         subscriptions_list = db.execute(sql, email)
-        if not subscriptions_list:
-            user_dict['subscriptions'] = list()
-        else:
-            user_dict['subscriptions'] = subscriptions_list[0]
+        user_dict['subscriptions'] = list()
+        if subscriptions_list:
+            for thread in subscriptions_list:
+                user_dict['subscriptions'].append(thread[0])
 
         return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 

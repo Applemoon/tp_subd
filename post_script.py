@@ -31,7 +31,7 @@ elif val == "usercreatewrong":
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     r = requests.post(url, data=json.dumps(data), headers=headers)
     print r
-if val == "postcreate":
+elif val == "postcreate":
     url = "http://localhost:8000/db/api/post/create"
     data = {"isApproved": True,
             "user": "example@mail.ru",
