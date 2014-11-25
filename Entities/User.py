@@ -162,7 +162,7 @@ class User:
         return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
 
     @staticmethod
-    def list_followers(qs_dict):
+    def list_followers(qs_dict, following=False):
         if not qs_dict.get('user'):
             return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
 
@@ -174,11 +174,11 @@ class User:
             since_id = qs_dict['since_id'][0]
         since_sql = ""
         if since_id != -1:
-            since_sql = """AND User.user > {}""".format(since_id)
+            since_sql = """AND User.user >= {}""".format(since_id)
 
         # Order part
         order = 'desc'
-        if qs_dict['order']:
+        if qs_dict.get('order'):
             order = qs_dict['order'][0]
         order_sql = """ORDER BY User.name {}""".format(order)
 
@@ -196,13 +196,14 @@ class User:
                 return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
             limit_sql = """LIMIT {}""".format(limit)
 
-        # sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
-        #     JOIN Follower ON Follower.follower = User.email \
-        #     WHERE Follower.following = %s %s %s %s;"""
-        # TODO
         sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
-            JOIN Follower ON Follower.follower = User.email \
-            WHERE Follower.following = %s {since_value} {order_value} {limit_value};""".format(
+                JOIN Follower ON """
+        if not following:
+            sql += """Follower.follower = User.email WHERE Follower.following"""
+        else:
+            sql += """Follower.following = User.email WHERE Follower.follower"""
+
+        sql += """ = %s {since_value} {order_value} {limit_value};""".format(
             since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
         db = MyDatabase()
@@ -229,66 +230,5 @@ class User:
 
         return [json.dumps({"code": 0, "response": user_list}, indent=4)]
 
-    @staticmethod
-    def list_following(qs_dict):
-        if not qs_dict.get('user'):
-            return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
-
-        user_email = qs_dict['user'][0]
-
-        # Since part
-        since_id = ""
-        if qs_dict.get('since_id'):
-            since_id = qs_dict['since_id'][0]
-        since_sql = ""
-        if since_id != "":
-            since_sql = """AND User.user > {}""".format(since_id)
-
-        # Order part
-        order = "desc"
-        if qs_dict.get('order'):
-            order = qs_dict['order'][0]
-        order_sql = """ORDER BY name {}""".format(order)
-
-        # Limit part
-        limit = -1
-        if qs_dict.get('limit'):
-            limit = qs_dict['limit'][0]
-        limit_sql = ""
-        if limit != -1:
-            try:
-                limit = int(limit)
-            except ValueError:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            if limit < 0:
-                return [json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)]
-            limit_sql = """LIMIT {}""".format(limit)
-
-        sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
-            JOIN Follower ON Follower.following = User.email \
-            WHERE Follower.follower = %s {since_value} {order_value} {limit_value};""".format(
-            since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
-
-        db = MyDatabase()
-        user_list_sql = db.execute(sql, user_email)
-        if not user_list_sql:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-        if not user_list_sql[0]:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-
-        user_list = list()
-        for user_sql in user_list_sql:
-            user = dict()
-            user['about'] = str_to_json(user_sql[0])
-            user['email'] = str_to_json(user_sql[1])
-            user['id'] = str_to_json(user_sql[2])
-            user['isAnonymous'] = str_to_json(user_sql[3])
-            user['name'] = str_to_json(user_sql[4])
-            user['username'] = str_to_json(user_sql[5])
-            user['followers'] = get_followers_list(user_email)
-            user['following'] = get_following_list(user_email)
-            user['subscriptions'] = get_subscribed_threads_list(user_email)
-
-            user_list.append(user)
-
-        return [json.dumps({"code": 0, "response": user_list}, indent=4)]
+    def list_following(self, qs_dict):
+        return self.list_followers(qs_dict, following=True)

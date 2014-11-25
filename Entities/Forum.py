@@ -1,7 +1,5 @@
 import MySQLdb
-import json
 
-from MyDatabase import MyDatabase
 from common import *
 
 
@@ -228,10 +226,9 @@ class Forum:
             JOIN Post ON Post.user = User.email \
             WHERE Post.forum = %s {snc_sql} {ord_sql} {lim_sql};""".format(
             snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
-        args = (qs_dict['forum'][0])
 
         db = MyDatabase()
-        data = db.execute(sql, args)
+        data = db.execute(sql, qs_dict['forum'][0])
         if not data:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
@@ -244,6 +241,10 @@ class Forum:
             user_dict['username'] = str_to_json(user[3])
             user_dict['isAnonymous'] = str_to_json(user[4])
             user_dict['about'] = str_to_json(user[5])
+            user_dict['followers'] = get_followers_list(user_dict['email'])
+            user_dict['following'] = get_following_list(user_dict['email'])
+            user_dict['subscriptions'] = get_subscribed_threads_list(user_dict['email'])
+
             user_list.append(user_dict)
 
         return [json.dumps({"code": 0, "response": user_list}, indent=4)]

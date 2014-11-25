@@ -256,11 +256,17 @@ def restore_post(post_id):
 def get_followers_list(email):
     sql = """SELECT follower FROM Follower WHERE following = %s;"""
     db = MyDatabase()
-    followers_list = db.execute(sql, email)
-    if not followers_list:
+    followers_list_sql = db.execute(sql, email)
+    if not followers_list_sql:
         return list()
 
-    return followers_list[0]
+    # followers_list = list()
+    # for follower in followers_list_sql[0]:
+    #     follower = try_encode(follower)
+    #     followers_list.append(follower)
+
+    # return followers_list
+    return followers_list_sql[0]
 
 
 def get_following_list(email):

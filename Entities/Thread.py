@@ -145,7 +145,7 @@ class Thread:
     def remove(html_method, request_body):
         if html_method != 'POST':
             return [json.dumps({"code": 3,
-                                "response": "Wrong html method for 'thread.remove/restore'"}, indent=4)]
+                                "response": "Wrong html method for 'thread.remove'"}, indent=4)]
 
         request_body = json.loads(request_body)
 
@@ -156,6 +156,11 @@ class Thread:
             remove_post(post['id'])
         db = MyDatabase()
         db.execute(sql, thread, True)
+
+        # TODO right?
+        # sql = """DELETE FROM Subscription WHERE thread = %s"""
+        # db = MyDatabase()
+        # db.execute(sql, thread, True)
 
         return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
