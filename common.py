@@ -260,12 +260,6 @@ def get_followers_list(email):
     if not followers_list_sql:
         return list()
 
-    # followers_list = list()
-    # for follower in followers_list_sql[0]:
-    #     follower = try_encode(follower)
-    #     followers_list.append(follower)
-
-    # return followers_list
     return followers_list_sql[0]
 
 
@@ -284,8 +278,7 @@ def get_subscribed_threads_list(email):
     db = MyDatabase()
     subscriptions_list = db.execute(sql, email)
     result = list()
-    if subscriptions_list:
-        for thread in subscriptions_list:
-            result.append(thread[0])
+    for thread in subscriptions_list:
+        result.append(thread[0])
 
     return result

@@ -54,31 +54,9 @@ class Forum:
 
         if qs_dict.get('related') and qs_dict.get('related')[0] == 'user':
             user = get_user_dict(forum_dict['user'])
-            if user == dict():
-                return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-
-            sql = """SELECT follower FROM Follower WHERE following = %s;"""
-            db = MyDatabase()
-            data = db.execute(sql, user['email'])
-
-            followers_list = list()
-            for line in data:
-                followers_list.append(line[0])
-            user['followers'] = followers_list
-
-            sql = """SELECT following FROM Follower WHERE follower = %s;"""
-            data = db.execute(sql, user['email'])
-            following_list = list()
-            for line in data:
-                following_list.append(line[0])
-            user['following'] = following_list
-
-            sql = """SELECT thread FROM Subscription WHERE subscriber = %s;"""
-            data = db.execute(sql, user['email'])
-            data_list = list()
-            for line in data:
-                data_list.append(line[0])
-            user['subscriptions'] = data_list
+            user['followers'] = get_followers_list(user['email'])
+            user['following'] = get_following_list(user['email'])
+            user['subscriptions'] = get_subscribed_threads_list(user['email'])
 
             forum_dict['user'] = user
 
@@ -124,11 +102,6 @@ class Forum:
             order = qs_dict['order'][0]
 
         post_list = get_post_list(forum=forum, since=since, limit=limit, sort=sort, order=order)
-
-        if not post_list:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-        if not post_list[0]:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
         for post in post_list:
             if user_related:
@@ -180,6 +153,9 @@ class Forum:
         for thread in thread_list:
             if user_related:
                 thread['user'] = get_user_dict(thread['user'])
+                thread['user']['followers'] = get_followers_list(thread['user']['email'])
+                thread['user']['following'] = get_following_list(thread['user']['email'])
+                thread['user']['subscriptions'] = get_subscribed_threads_list(thread['user']['email'])
 
             if forum_related:
                 thread['forum'] = get_forum_dict(short_name=thread['forum'])
@@ -198,8 +174,7 @@ class Forum:
             try:
                 since_id = int(since_id)
             except ValueError:
-                return [json.dumps({"code": 3, "response": "Wrong since_id value"},
-                                   indent=4)]
+                return [json.dumps({"code": 3, "response": "Wrong since_id value"}, indent=4)]
             since_id_sql = """AND User.user >= {}""".format(since_id)
 
         # Limit part
@@ -228,23 +203,21 @@ class Forum:
             snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
 
         db = MyDatabase()
-        data = db.execute(sql, qs_dict['forum'][0])
-        if not data:
-            return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
+        user_list_sql = db.execute(sql, qs_dict['forum'][0])
 
         user_list = list()
-        for user in data:
-            user_dict = dict()
-            user_dict['id'] = str_to_json(user[0])
-            user_dict['email'] = str_to_json(user[1])
-            user_dict['name'] = str_to_json(user[2])
-            user_dict['username'] = str_to_json(user[3])
-            user_dict['isAnonymous'] = str_to_json(user[4])
-            user_dict['about'] = str_to_json(user[5])
-            user_dict['followers'] = get_followers_list(user_dict['email'])
-            user_dict['following'] = get_following_list(user_dict['email'])
-            user_dict['subscriptions'] = get_subscribed_threads_list(user_dict['email'])
+        for user_sql in user_list_sql:
+            user = dict()
+            user['id'] = str_to_json(user_sql[0])
+            user['email'] = str_to_json(user_sql[1])
+            user['name'] = str_to_json(user_sql[2])
+            user['username'] = str_to_json(user_sql[3])
+            user['isAnonymous'] = str_to_json(user_sql[4])
+            user['about'] = str_to_json(user_sql[5])
+            user['followers'] = get_followers_list(user['email'])
+            user['following'] = get_following_list(user['email'])
+            user['subscriptions'] = get_subscribed_threads_list(user['email'])
 
-            user_list.append(user_dict)
+            user_list.append(user)
 
         return [json.dumps({"code": 0, "response": user_list}, indent=4)]

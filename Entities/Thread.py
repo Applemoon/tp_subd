@@ -157,11 +157,6 @@ class Thread:
         db = MyDatabase()
         db.execute(sql, thread, True)
 
-        # TODO right?
-        # sql = """DELETE FROM Subscription WHERE thread = %s"""
-        # db = MyDatabase()
-        # db.execute(sql, thread, True)
-
         return [json.dumps({"code": 0, "response": thread}, indent=4)]
 
     @staticmethod

@@ -225,10 +225,10 @@ class Post:
         db = MyDatabase()
         db.execute(sql, post_id, True)
 
-        post = get_post_list(id_value=post_id)
-        if not post:
+        post_list = get_post_list(id_value=post_id)
+        if not post_list:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
-        if not post[0]:
+        if not post_list[0]:
             return [json.dumps({"code": 1, "response": "Empty set"}, indent=4)]
 
-        return [json.dumps({"code": 0, "response": post[0]}, indent=4)]
+        return [json.dumps({"code": 0, "response": post_list[0]}, indent=4)]

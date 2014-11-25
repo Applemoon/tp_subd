@@ -70,13 +70,13 @@ class User:
             return [json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)]
 
         email = qs_dict['user'][0]
-        user_dict = get_user_dict(email)
+        user = get_user_dict(email)
 
-        user_dict['followers'] = get_followers_list(email)
-        user_dict['following'] = get_following_list(email)
-        user_dict['subscriptions'] = get_subscribed_threads_list(email)
+        user['followers'] = get_followers_list(email)
+        user['following'] = get_following_list(email)
+        user['subscriptions'] = get_subscribed_threads_list(email)
 
-        return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
+        return [json.dumps({"code": 0, "response": user}, indent=4)]
 
     @staticmethod
     def follow(html_method, request_body):
@@ -111,8 +111,8 @@ class User:
         args = (follower, followee)
         db = MyDatabase()
         db.execute(sql, args, True)
-        user_dict = get_user_dict(follower)
-        return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
+        user = get_user_dict(follower)
+        return [json.dumps({"code": 0, "response": user}, indent=4)]
 
     @staticmethod
     def list_posts(qs_dict):
@@ -158,8 +158,8 @@ class User:
         args = (about, name, user)
         db = MyDatabase()
         db.execute(sql, args, True)
-        user_dict = get_user_dict(user)
-        return [json.dumps({"code": 0, "response": user_dict}, indent=4)]
+        user = get_user_dict(user)
+        return [json.dumps({"code": 0, "response": user}, indent=4)]
 
     @staticmethod
     def list_followers(qs_dict, following=False):
