@@ -2,9 +2,11 @@ import requests
 import json
 import sys
 
+url_base = "http://localhost:5000"
+
 val = sys.argv[1]
 if val == "forumcreate":
-    url = "http://localhost:8000/db/api/forum/create"
+    url = url_base + "/db/api/forum/create"
     data = {"name": "Forum With Sufficiently Large Name 3",
             "short_name": "forumwithsufficientlylargename 3",
             "user": "user@mail.ru"}
@@ -12,7 +14,7 @@ if val == "forumcreate":
     r = requests.post(url, data=json.dumps(data), headers=headers)
     print r
 elif val == "usercreate":
-    url = "http://localhost:8000/db/api/user/create"
+    url = url_base + "/db/api/user/create"
     data = {'username': None, 
             'about': None, 
             'isAnonymous': False, 
@@ -22,7 +24,7 @@ elif val == "usercreate":
     r = requests.post(url, data=json.dumps(data), headers=headers)
     print r
 elif val == "usercreatewrong":
-    url = "http://localhost:8000/db/api/user/create"
+    url = url_base + "/db/api/user/create"
     data = {'username': None, 
             'about': None, 
             'isAnonymous': False, 
@@ -32,7 +34,7 @@ elif val == "usercreatewrong":
     r = requests.post(url, data=json.dumps(data), headers=headers)
     print r
 elif val == "postcreate":
-    url = "http://localhost:8000/db/api/post/create"
+    url = url_base + "/db/api/post/create"
     data = {"isApproved": True,
             "user": "example@mail.ru",
             "date": "2014-01-01 00:00:01",

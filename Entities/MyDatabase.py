@@ -4,19 +4,19 @@ import json
 
 class MyDatabase:
     def __init__(self):
-        self.db = MySQLdb.connect(host="localhost", user="root", passwd="1",
-                                  db="tp_subd", use_unicode=1, charset='utf8')
-        self.cursor = self.db.cursor()
+        self.connection = MySQLdb.connect(host="localhost", user="root", passwd="1",
+                                          db="tp_subd", use_unicode=1, charset='utf8')
+        self.cursor = self.connection.cursor()
         pass
 
     def execute(self, sql, args=(), post=False):
-        self.db = MySQLdb.connect(host="localhost", user="root", passwd="1",
-                                  db="tp_subd", use_unicode=1, charset='utf8')
-        self.cursor = self.db.cursor()
+        self.connection = MySQLdb.connect(host="localhost", user="root", passwd="1",
+                                          db="tp_subd", use_unicode=1, charset='utf8')
+        self.cursor = self.connection.cursor()
         self.cursor.execute(sql, args)
         if post:
-            self.db.commit()
-        self.db.close()
+            self.connection.commit()
+        self.connection.close()
         return self.cursor.fetchall()
 
     def clear(self):
@@ -27,7 +27,7 @@ class MyDatabase:
         self.execute("""TRUNCATE TABLE Subscription;""", post=True)
         self.execute("""TRUNCATE TABLE Follower;""", post=True)
 
-        return [json.dumps({"code": 0, "response": "OK"})]
+        return json.dumps({"code": 0, "response": "OK"})
 
     def get_last_row_id(self):
         return self.cursor.lastrowid

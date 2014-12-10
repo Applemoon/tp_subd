@@ -95,7 +95,7 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
 
     # order part
     if order != 'asc' and order != 'desc':
-        return [json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)]
+        return json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)
     order_sql = """ORDER BY date {}""".format(order)
 
     sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
