@@ -42,8 +42,9 @@ def create(html_method, request_body):
     else:
         is_anonymous = 0
 
-    sql = """INSERT INTO User (username, about, name, email, isAnonymous) VALUES (%s, %s, %s, %s, %s);"""
-    args = (username, about, name, email, is_anonymous)
+    sql = """INSERT INTO User (username, about, name, email, isAnonymous) VALUES \
+        (%(username)s, %(about)s, %(name)s, %(email)s, %(isAnonymous)s);"""
+    args = {'username': username, 'about': about, 'name': name, 'email': email, 'isAnonymous': is_anonymous}
     db = MyDatabase()
 
     try:
@@ -85,8 +86,8 @@ def follow(html_method, request_body):
     follower = request_body.get('follower')
     followee = request_body.get('followee')
 
-    sql = """INSERT INTO Follower (follower, following) VALUES (%s, %s);"""
-    args = (follower, followee)
+    sql = """INSERT INTO Follower (follower, following) VALUES (%(follower)s, %(following)s);"""
+    args = {'follower': follower, 'following': followee}
     db = MyDatabase()
     db.execute(sql, args, True)
     user_dict = get_user_dict(follower)
@@ -103,8 +104,8 @@ def unfollow(html_method, request_body):
     follower = request_body.get('follower')
     followee = request_body.get('followee')
 
-    sql = """DELETE FROM Follower WHERE follower = %s AND following = %s;"""
-    args = (follower, followee)
+    sql = """DELETE FROM Follower WHERE follower = %(follower)s AND following = %(following)s;"""
+    args = {'follower': follower, 'following': followee}
     db = MyDatabase()
     db.execute(sql, args, True)
     user = get_user_dict(follower)
@@ -150,8 +151,8 @@ def update_profile(html_method, request_body):
     name = request_body.get('name')
     name = try_encode(name)
 
-    sql = """UPDATE User SET about = %s, name = %s WHERE email = %s;"""
-    args = (about, name, user)
+    sql = """UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;"""
+    args = {'about': about, 'name': name, 'email': user}
     db = MyDatabase()
     db.execute(sql, args, True)
     user = get_user_dict(user)
@@ -192,18 +193,17 @@ def list_followers(qs_dict, following=False):
             return json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)
         limit_sql = """LIMIT {}""".format(limit)
 
-    sql = """SELECT about, email, user, isAnonymous, name, username FROM User \
-            JOIN Follower ON """
+    sql = """SELECT about, email, user, isAnonymous, name, username FROM User JOIN Follower ON """
     if not following:
         sql += """Follower.follower = User.email WHERE Follower.following"""
     else:
         sql += """Follower.following = User.email WHERE Follower.follower"""
 
-    sql += """ = %s {since_value} {order_value} {limit_value};""".format(
+    sql += """ = %(email)s {since_value} {order_value} {limit_value};""".format(
         since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
     db = MyDatabase()
-    user_list_sql = db.execute(sql, user_email)
+    user_list_sql = db.execute(sql, {'email': user_email})
     if not user_list_sql:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
     if not user_list_sql[0]:

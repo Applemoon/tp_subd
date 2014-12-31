@@ -25,12 +25,11 @@ def create(html_method, request_body):
     request_body = json.loads(request_body.data)
 
     name = request_body.get('name')
-    name = try_encode(name)
     short_name = request_body.get('short_name')
     short_name = try_encode(short_name)
     user = request_body.get('user')
-    sql = """INSERT INTO Forum (name, short_name, user) VALUES (%s, %s, %s);"""
-    args = (name, short_name, user)
+    sql = """INSERT INTO Forum (name, short_name, user) VALUES (%(name)s, %(short_name)s, %(user)s);"""
+    args = {'name': name, 'short_name': short_name, 'user': user}
     db = MyDatabase()
 
     try:
@@ -198,11 +197,11 @@ def list_users(qs_dict):
 
     sql = """SELECT User.user, User.email, User.name, User.username, User.isAnonymous, User.about FROM User \
         JOIN Post ON Post.user = User.email \
-        WHERE Post.forum = %s {snc_sql} GROUP BY User.user {ord_sql} {lim_sql};""".format(
+        WHERE Post.forum = %(forum)s {snc_sql} GROUP BY User.user {ord_sql} {lim_sql};""".format(
         snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
 
     db = MyDatabase()
-    user_list_sql = db.execute(sql, qs_dict.get('forum'))
+    user_list_sql = db.execute(sql, {'forum': qs_dict.get('forum')})
 
     user_list = list()
     for user_sql in user_list_sql:

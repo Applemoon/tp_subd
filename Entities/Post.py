@@ -90,10 +90,13 @@ def create(html_method, request_body):
     else:
         is_deleted = 0
 
-    sql = """INSERT INTO Post (user, thread, forum, message, parent, date, isSpam, isEdited, isDeleted, \
-        isHighlighted, isApproved) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
-    args = (user, thread, forum, message, parent, date, is_spam, is_edited, is_deleted, is_highlighted,
-            is_approved)
+    sql = """INSERT INTO Post (user, thread, forum, message, parent, date, \
+        isSpam, isEdited, isDeleted, isHighlighted, isApproved) VALUES \
+        (%(user)s, %(thread)s, %(forum)s, %(message)s, %(parent)s, %(date)s, \
+        %(isSpam)s, %(isEdited)s, %(isDeleted)s, %(isHighlighted)s, %(isApproved)s);"""
+    args = {'user': user, 'thread': thread, 'forum': forum, 'message': message, 'parent': parent, 'date': date,
+            'isSpam': is_spam, 'isEdited': is_edited, 'isDeleted': is_deleted, 'isHighlighted': is_highlighted,
+            'isApproved': is_approved}
 
     db = MyDatabase()
 
@@ -190,10 +193,11 @@ def update(html_method, request_body):
     message = request_body.get('message')
     message = try_encode(message)
 
-    sql = """UPDATE Post SET message = %s WHERE post = %s;"""
+    sql = """UPDATE Post SET message = %(message)s WHERE post = %(post)s;"""
 
     db = MyDatabase()
-    db.execute(sql, (message, post_id), True)
+    args = {'message': message, 'post': post_id}
+    db.execute(sql, args, True)
 
     post_list = get_post_list(id_value=post_id)
     if not post_list:
@@ -215,12 +219,12 @@ def vote(html_method, request_body):
         return json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)
 
     if vote_value == 1:
-        sql = """UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %s;"""
+        sql = """UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;"""
     else:
-        sql = """UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %s;"""
+        sql = """UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;"""
 
     db = MyDatabase()
-    db.execute(sql, post_id, True)
+    db.execute(sql, {'post': post_id}, True)
 
     post_list = get_post_list(id_value=post_id)
     if not post_list:

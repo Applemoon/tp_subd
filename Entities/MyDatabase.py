@@ -4,16 +4,18 @@ import json
 
 class MyDatabase:
     def __init__(self):
-        self.connection = MySQLdb.connect(host="localhost", user="root", passwd="1",
-                                          db="tp_subd", use_unicode=1, charset='utf8')
-        self.cursor = self.connection.cursor()
+        self.connection, self.cursor = self.init_connection_and_cursor()
         pass
 
     def execute(self, sql, args=(), post=False):
-        self.connection = MySQLdb.connect(host="localhost", user="root", passwd="1",
-                                          db="tp_subd", use_unicode=1, charset='utf8')
-        self.cursor = self.connection.cursor()
-        self.cursor.execute(sql, args)
+        self.connection, self.cursor = self.init_connection_and_cursor()
+
+        try:
+            self.cursor.execute(sql, args)
+        except Exception as e:
+            print "Error %d: %s" % (e.args[0], e.args[1])
+            raise
+
         if post:
             self.connection.commit()
         self.connection.close()
@@ -31,3 +33,10 @@ class MyDatabase:
 
     def get_last_row_id(self):
         return self.cursor.lastrowid
+
+    @staticmethod
+    def init_connection_and_cursor():
+        connection = MySQLdb.connect(host="localhost", user="subd_user",
+                                     db="tp_subd", use_unicode=1, charset='utf8')
+        cursor = connection.cursor()
+        return connection, cursor

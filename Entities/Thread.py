@@ -91,8 +91,9 @@ def create(html_method, request_body):
         is_deleted = 1
 
     sql = """INSERT INTO Thread (forum, title, isClosed, user, date, message, slug, isDeleted) \
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"""
-    args = (forum, title, is_closed, user, date, message, slug, is_deleted)
+        VALUES (%(forum)s, %(title)s, %(isClosed)s, %(user)s, %(date)s, %(message)s, %(slug)s, %(isDeleted)s);"""
+    args = {'forum': forum, 'title': title, 'isClosed': is_closed, 'user': user, 'date': date, 'message': message,
+            'slug': slug, 'isDeleted': is_deleted}
     db = MyDatabase()
 
     try:
@@ -146,12 +147,12 @@ def remove(html_method, request_body):
     request_body = json.loads(request_body.data)
 
     thread = request_body.get('thread')
-    sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %s;"""
+    sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %(thread)s;"""
     post_list = get_post_list(thread=thread)
     for post in post_list:
         remove_post(post['id'])
     db = MyDatabase()
-    db.execute(sql, thread, True)
+    db.execute(sql, {'thread': thread}, True)
 
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
@@ -164,12 +165,12 @@ def open_method(html_method, request_body, close_value=False):
 
     thread = request_body.get('thread')
     if not close_value:
-        sql = """UPDATE Thread SET isClosed = 0 WHERE thread = %s;"""
+        sql = """UPDATE Thread SET isClosed = 0 WHERE thread = %(thread)s;"""
     else:
-        sql = """UPDATE Thread SET isClosed = 1 WHERE thread = %s;"""
+        sql = """UPDATE Thread SET isClosed = 1 WHERE thread = %(thread)s;"""
 
     db = MyDatabase()
-    db.execute(sql, thread, True)
+    db.execute(sql, {'thread': thread}, True)
 
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
@@ -193,8 +194,8 @@ def restore(html_method, request_body):
     for post in post_list:
         restore_post(post['id'])
 
-    sql = """UPDATE Thread SET isDeleted = 0, posts = %s WHERE thread = %s;"""
-    args = (len(post_list), thread)
+    sql = """UPDATE Thread SET isDeleted = 0, posts = %(posts)s WHERE thread = %(thread)s;"""
+    args = {'posts': len(post_list), 'thread': thread}
     db = MyDatabase()
     db.execute(sql, args, True)
 
@@ -236,8 +237,8 @@ def update(html_method, request_body):
     slug = request_body.get('slug')
     thread = request_body.get('thread')
 
-    sql = """UPDATE Thread SET message = %s, slug = %s WHERE thread = %s;"""
-    args = (message, slug, thread)
+    sql = """UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;"""
+    args = {'message': message, 'slug': slug, 'thread': thread}
     db = MyDatabase()
     db.execute(sql, args, True)
     thread_list = get_thread_list(id_value=thread)
@@ -259,11 +260,11 @@ def subscribe(html_method, request_body, unsubscribe_value=False):
     user = request_body.get('user')
     thread = request_body.get('thread')
     if not unsubscribe_value:
-        sql = """INSERT INTO Subscription (subscriber, thread) VALUES (%s, %s);"""
+        sql = """INSERT INTO Subscription (subscriber, thread) VALUES (%(subscriber)s, %(thread)s);"""
     else:
-        sql = """DELETE FROM Subscription WHERE subscriber = %s AND thread = %s;"""
+        sql = """DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;"""
 
-    args = (user, thread)
+    args = {'subscriber': user, 'thread': thread}
     db = MyDatabase()
     db.execute(sql, args, True)
     result_dict = dict()
@@ -287,12 +288,12 @@ def vote(html_method, request_body):
     thread = request_body.get('thread')
 
     if vote_value == 1:
-        sql = """UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %s;"""
+        sql = """UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %(thread)s;"""
     else:
-        sql = """UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %s;"""
+        sql = """UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;"""
 
     db = MyDatabase()
-    db.execute(sql, thread, True)
+    db.execute(sql, {'thread': thread}, True)
 
     thread_dict = dict()
     thread_list = get_thread_list(id_value=thread)
