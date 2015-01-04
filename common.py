@@ -1,6 +1,6 @@
 import json
+import urlparse
 
-# from Entities.MyDatabase import MyDatabase
 from Entities.MyDatabase import MyDatabase
 
 
@@ -62,8 +62,7 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
         where_sql = "thread = {}".format(thread)
     elif user != "":
         if date != "":
-            where_sql = "user = '{user_value}' AND date = '{date_value}'".format(user_value=user,
-                                                                                 date_value=date)
+            where_sql = "user = '{user_value}' AND date = '{date_value}'".format(user_value=user, date_value=date)
         else:
             where_sql = "user = '{user_value}'".format(user_value=user)
     else:
@@ -284,3 +283,10 @@ def get_subscribed_threads_list(email):
         result.append(thread[0])
 
     return result
+
+
+def get_json(request):
+    if request.method == 'GET':
+        return dict((k, v if len(v) > 1 else v[0]) for k, v in urlparse.parse_qs(request.query_string).iteritems())
+
+    return request.json

@@ -1,40 +1,18 @@
 import MySQLdb
+from flask import Blueprint, request
+
 from common import *
 
-
-def do_method(db_method, html_method, request_body, qs_dict):
-    if db_method == 'create':
-        return create(html_method, request_body)
-    elif db_method == 'details':
-        return details(qs_dict)
-    elif db_method == 'follow':
-        return follow(html_method, request_body)
-    elif db_method == 'unfollow':
-        return unfollow(html_method, request_body)
-    elif db_method == 'listPosts':
-        return list_posts(qs_dict)
-    elif db_method == 'updateProfile':
-        return update_profile(html_method, request_body)
-    elif db_method == 'listFollowers':
-        return list_followers(qs_dict)
-    elif db_method == 'listFollowing':
-        return list_following(qs_dict)
-
-    return json.dumps({"code": 3, "response": "Unknown user db method"}, indent=4)
+module = Blueprint('user', __name__, url_prefix='/db/api/user')
 
 
-def create(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'user.create'"}, indent=4)
+@module.route("/create/", methods=["POST"])
+def create():
+    request_body = request.json
 
-    request_body = json.loads(request_body.data)
-
-    username = request_body.get('username')
-    username = try_encode(username)
+    username = try_encode(request_body.get('username'))
     about = request_body.get('about')
-    name = request_body.get('name')
-    name = try_encode(name)
+    name = try_encode(request_body.get('name'))
     email = request_body.get('email')
     is_anonymous_key = request_body.get('isAnonymous', False)
     if is_anonymous_key:
@@ -62,11 +40,13 @@ def create(html_method, request_body):
     return json.dumps({"code": 0, "response": user_dict}, indent=4)
 
 
-def details(qs_dict):
-    if not qs_dict.get('user'):
+@module.route("/details/", methods=["GET"])
+def details():
+    qs = get_json(request)
+    email = qs.get('user')
+    if not email:
         return json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)
 
-    email = qs_dict.get('user')[0]
     user = get_user_dict(email)
 
     user['followers'] = get_followers_list(email)
@@ -76,12 +56,9 @@ def details(qs_dict):
     return json.dumps({"code": 0, "response": user}, indent=4)
 
 
-def follow(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'user.follow'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/follow/", methods=["POST"])
+def follow():
+    request_body = request.json
 
     follower = request_body.get('follower')
     followee = request_body.get('followee')
@@ -94,12 +71,9 @@ def follow(html_method, request_body):
     return json.dumps({"code": 0, "response": user_dict}, indent=4)
 
 
-def unfollow(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'user.unfollow'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/unfollow/", methods=["POST"])
+def unfollow():
+    request_body = request.json
 
     follower = request_body.get('follower')
     followee = request_body.get('followee')
@@ -112,37 +86,25 @@ def unfollow(html_method, request_body):
     return json.dumps({"code": 0, "response": user}, indent=4)
 
 
-def list_posts(qs_dict):
-    if not qs_dict.get('user'):
+@module.route("/listPosts/", methods=["GET"])
+def list_posts():
+    qs = get_json(request)
+
+    email = qs.get('user')
+    if not email:
         return json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)
 
-    user = qs_dict.get('user')[0]
+    since = qs.get('since', '')
+    limit = qs.get('limit', -1)
+    order = qs.get('order', 'desc')
 
-    # Since part
-    since = ''
-    if qs_dict.get('since'):
-        since = qs_dict.get('since')[0]
-
-    # Limit part
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
-
-    # Order part
-    order = 'desc'
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-
-    post_list = get_post_list(user=user, since=since, limit=limit, order=order)
+    post_list = get_post_list(user=email, since=since, limit=limit, order=order)
     return json.dumps({"code": 0, "response": post_list}, indent=4)
 
 
-def update_profile(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'user.updateProfile'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/updateProfile/", methods=["POST"])
+def update_profile():
+    request_body = request.json
 
     about = request_body.get('about')
     about = try_encode(about)
@@ -159,31 +121,35 @@ def update_profile(html_method, request_body):
     return json.dumps({"code": 0, "response": user}, indent=4)
 
 
-def list_followers(qs_dict, following=False):
-    if not qs_dict.get('user'):
+@module.route("/listFollowers/", methods=["GET"])
+def list_followers():
+    return list_followers_method(False)
+
+
+@module.route("/listFollowing/", methods=["GET"])
+def list_following():
+    return list_followers_method(True)
+
+
+def list_followers_method(is_following):
+    qs = get_json(request)
+
+    email = qs.get('user')
+    if not email:
         return json.dumps({"code": 2, "response": "No 'user' key"}, indent=4)
 
-    user_email = qs_dict.get('user')[0]
-
     # Since part
-    since_id = -1
-    if qs_dict.get('since_id'):
-        since_id = qs_dict.get('since_id')[0]
-    since_sql = ""
+    since_id = qs.get('since_id', -1)
     if since_id != -1:
         since_sql = """AND User.user >= {}""".format(since_id)
+    else:
+        since_sql = ""
 
     # Order part
-    order = 'desc'
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-    order_sql = """ORDER BY User.name {}""".format(order)
+    order_sql = """ORDER BY User.name {}""".format(qs.get('order', 'desc'))
 
     # Limit part
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
-    limit_sql = ""
+    limit = qs.get('limit', -1)
     if limit != -1:
         try:
             limit = int(limit)
@@ -192,9 +158,11 @@ def list_followers(qs_dict, following=False):
         if limit < 0:
             return json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)
         limit_sql = """LIMIT {}""".format(limit)
+    else:
+        limit_sql = ""
 
     sql = """SELECT about, email, user, isAnonymous, name, username FROM User JOIN Follower ON """
-    if not following:
+    if not is_following:
         sql += """Follower.follower = User.email WHERE Follower.following"""
     else:
         sql += """Follower.following = User.email WHERE Follower.follower"""
@@ -203,10 +171,10 @@ def list_followers(qs_dict, following=False):
         since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
     db = MyDatabase()
-    user_list_sql = db.execute(sql, {'email': user_email})
+    user_list_sql = db.execute(sql, {'email': email})
     if not user_list_sql:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    if not user_list_sql[0]:
+    elif not user_list_sql[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     user_list = list()
@@ -225,7 +193,3 @@ def list_followers(qs_dict, following=False):
         user_list.append(user)
 
     return json.dumps({"code": 0, "response": user_list}, indent=4)
-
-
-def list_following(qs_dict):
-    return list_followers(qs_dict, following=True)

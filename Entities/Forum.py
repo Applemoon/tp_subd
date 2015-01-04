@@ -1,28 +1,14 @@
 import MySQLdb
+from flask import Blueprint, request
 
 from common import *
 
-
-def do_method(db_method, html_method, request_body, qs_dict):
-    if db_method == 'create':
-        return create(html_method, request_body)
-    elif db_method == 'details':
-        return details(qs_dict)
-    elif db_method == 'listPosts':
-        return list_posts(qs_dict)
-    elif db_method == 'listThreads':
-        return list_threads(qs_dict)
-    elif db_method == 'listUsers':
-        return list_users(qs_dict)
-
-    return json.dumps({"code": 3, "response": "Unknown forum db method"}, indent=4)
+module = Blueprint('forum', __name__, url_prefix='/db/api/forum')
 
 
-def create(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'forum.create'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/create/", methods=["POST"])
+def create():
+    request_body = request.json
 
     name = request_body.get('name')
     short_name = request_body.get('short_name')
@@ -41,16 +27,19 @@ def create(html_method, request_body):
         return json.dumps({"code": 0, "response": forum_dict}, indent=4)
 
 
-def details(qs_dict):
-    if not qs_dict.get('forum'):
+@module.route("/details/", methods=["GET"])
+def details():
+    qs = get_json(request)
+    short_name = qs.get('forum')
+
+    if not short_name:
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
 
-    short_name = qs_dict.get('forum')[0]
     forum_dict = get_forum_dict(short_name=short_name)
     if forum_dict == dict():
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
-    if qs_dict.get('related') and qs_dict.get('related')[0] == 'user':
+    if qs.get('related', '') == 'user':
         user = get_user_dict(forum_dict['user'])
         user['followers'] = get_followers_list(user['email'])
         user['following'] = get_following_list(user['email'])
@@ -61,43 +50,42 @@ def details(qs_dict):
     return json.dumps({"code": 0, "response": forum_dict}, indent=4)
 
 
-def list_posts(qs_dict):
-    if not qs_dict.get('forum'):
+@module.route("/listPosts/", methods=["GET"])
+def list_posts():
+    qs = get_json(request)
+
+    forum = qs.get('forum')
+
+    if not forum:
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
 
-    forum = qs_dict.get('forum')[0]
     forum = try_encode(forum)
 
     # Related part
+    related_values = list()
+    qs_related = qs.get('related')
+    if type(qs_related) is list:
+        related_values.extend(qs_related)
+    elif type(qs_related) is str:
+        related_values.append(qs_related)
+
     thread_related = False
     forum_related = False
     user_related = False
-    if qs_dict.get('related'):
-        for related_value in qs_dict.get('related'):
-            if related_value == 'thread':
-                thread_related = True
-            elif related_value == 'forum':
-                forum_related = True
-            elif related_value == 'user':
-                user_related = True
-            else:
-                return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
+    for related_value in related_values:
+        if related_value == 'thread':
+            thread_related = True
+        elif related_value == 'forum':
+            forum_related = True
+        elif related_value == 'user':
+            user_related = True
+        else:
+            return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
 
-    since = ""
-    if qs_dict.get('since'):
-        since = qs_dict.get('since')[0]
-
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
-
-    sort = "flat"
-    if qs_dict.get('sort'):
-        sort = qs_dict.get('sort')[0]
-
-    order = "desc"
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
+    since = qs.get('since', '')
+    limit = qs.get('limit', -1)
+    sort = qs.get('sort', 'flat')
+    order = qs.get('order', 'desc')
 
     post_list = get_post_list(forum=forum, since=since, limit=limit, sort=sort, order=order)
 
@@ -114,39 +102,37 @@ def list_posts(qs_dict):
     return json.dumps({"code": 0, "response": post_list}, indent=4)
 
 
-def list_threads(qs_dict):
-    if not qs_dict.get('forum'):
+@module.route("/listThreads/", methods=["GET"])
+def list_threads():
+    qs = get_json(request)
+
+    forum = qs.get('forum')
+
+    if not forum:
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
 
-    forum = qs_dict.get('forum')[0]
-
-    # Since part
-    since = ""
-    if qs_dict.get('since'):
-        since = qs_dict.get('since')[0]
-
-    # Order part
-    order = ""
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-
-    # Limit part
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
+    since = qs.get('since', '')
+    order = qs.get('order', '')
+    limit = qs.get('limit', -1)
     thread_list = get_thread_list(forum=forum, since=since, order=order, limit=limit)
 
     # Related part
+    related_values = list()
+    qs_related = qs.get('related')
+    if type(qs_related) is list:
+        related_values.extend(qs_related)
+    elif type(qs_related) is str:
+        related_values.append(qs_related)
+
     forum_related = False
     user_related = False
-    if qs_dict.get('related'):
-        for related_value in qs_dict.get('related'):
-            if related_value == 'forum':
-                forum_related = True
-            elif related_value == 'user':
-                user_related = True
-            else:
-                return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
+    for related_value in related_values:
+        if related_value == 'forum':
+            forum_related = True
+        elif related_value == 'user':
+            user_related = True
+        else:
+            return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
 
     for thread in thread_list:
         if user_related:
@@ -161,24 +147,27 @@ def list_threads(qs_dict):
     return json.dumps({"code": 0, "response": thread_list}, indent=4)
 
 
-def list_users(qs_dict):
-    if not qs_dict.get('forum'):
+@module.route("/listUsers/", methods=["GET"])
+def list_users():
+    qs = get_json(request)
+
+    if not qs.get('forum'):
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
 
     # Since id part
-    since_id_sql = ''
-    if qs_dict.get('since_id'):
-        since_id = qs_dict.get('since_id')[0]
+    since_id = qs.get('since_id')
+    if since_id:
         try:
             since_id = int(since_id)
         except ValueError:
             return json.dumps({"code": 3, "response": "Wrong since_id value"}, indent=4)
         since_id_sql = """AND User.user >= {}""".format(since_id)
+    else:
+        since_id_sql = ''
 
     # Limit part
-    limit_sql = ''
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
+    if qs.get('limit'):
+        limit = qs.get('limit')[0]
         try:
             limit = int(limit)
         except ValueError:
@@ -186,13 +175,11 @@ def list_users(qs_dict):
         if limit < 0:
             return json.dumps({"code": 3, "response": "Wrong limit value"}, indent=4)
         limit_sql = """LIMIT {}""".format(limit)
+    else:
+        limit_sql = ''
 
     # Order part
-    order = 'desc'
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-        if order != 'asc' and order != 'desc':
-            return json.dumps({"code": 3, "response": "Wrong order value"}, indent=4)
+    order = qs.get('order', 'desc')
     order_sql = """ORDER BY User.name {}""".format(order)
 
     sql = """SELECT User.user, User.email, User.name, User.username, User.isAnonymous, User.about FROM User \
@@ -201,7 +188,7 @@ def list_users(qs_dict):
         snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
 
     db = MyDatabase()
-    user_list_sql = db.execute(sql, {'forum': qs_dict.get('forum')})
+    user_list_sql = db.execute(sql, {'forum': qs.get('forum')})
 
     user_list = list()
     for user_sql in user_list_sql:

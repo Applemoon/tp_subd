@@ -1,59 +1,26 @@
 import MySQLdb
+from flask import Blueprint, request
+
 from common import *
 
-
-def do_method(db_method, html_method, request_body, qs_dict):
-    if db_method == 'list':
-        return list_method(qs_dict)
-    elif db_method == 'create':
-        return create(html_method, request_body)
-    elif db_method == 'details':
-        return details(qs_dict)
-    elif db_method == 'remove':
-        return remove(html_method, request_body)
-    elif db_method == 'open':
-        return open_method(html_method, request_body)
-    elif db_method == 'close':
-        return close(html_method, request_body)
-    elif db_method == 'restore':
-        return restore(html_method, request_body)
-    elif db_method == 'listPosts':
-        return list_posts(qs_dict)
-    elif db_method == 'update':
-        return update(html_method, request_body)
-    elif db_method == 'subscribe':
-        return subscribe(html_method, request_body)
-    elif db_method == 'unsubscribe':
-        return unsubscribe(html_method, request_body)
-    elif db_method == 'vote':
-        return vote(html_method, request_body)
-
-    return json.dumps({"code": 3, "response": "Unknown thread db method"}, indent=4)
+module = Blueprint('thread', __name__, url_prefix='/db/api/thread')
 
 
-def list_method(qs_dict):
-    if qs_dict.get('forum'):
+@module.route("/list/", methods=["GET"])
+def list_method():
+    qs = get_json(request)
+    if qs.get('forum'):
         key = "forum"
-    elif qs_dict.get('user'):
+    elif qs.get('user'):
         key = "user"
     else:
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
-    key_value = qs_dict.get(key)[0]
+    key_value = qs.get(key)
 
-    # Since part
-    since = ""
-    if qs_dict.get('since'):
-        since = qs_dict.get('since')[0]
+    since = qs.get('since', '')
+    order = qs.get('order', '')
+    limit = qs.get('limit', -1)
 
-    # Order part
-    order = ""
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-
-    # Limit part
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
     if key == "forum":
         thread_list = get_thread_list(forum=key_value, since=since, order=order, limit=limit)
     else:
@@ -62,21 +29,19 @@ def list_method(qs_dict):
     return json.dumps({"code": 0, "response": thread_list}, indent=4)
 
 
-def create(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.create'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/create/", methods=["POST"])
+def create():
+    request_body = request.json
 
     # Required
     forum = request_body.get('forum')
     forum = try_encode(forum)
     title = request_body.get('title')
     title = try_encode(title)
-    is_closed_key = request_body.get('isClosed')
-    is_closed = 0
-    if is_closed_key:
+    if request_body.get('isClosed'):
         is_closed = 1
+    else:
+        is_closed = 0
     user = request_body.get('user')
     date = request_body.get('date')
     message = request_body.get('message')
@@ -85,10 +50,10 @@ def create(html_method, request_body):
     slug = try_encode(slug)
 
     # Optional
-    is_deleted_key = request_body.get('isDeleted', False)
-    is_deleted = 0
-    if is_deleted_key:
+    if request_body.get('isDeleted', False):
         is_deleted = 1
+    else:
+        is_deleted = 0
 
     sql = """INSERT INTO Thread (forum, title, isClosed, user, date, message, slug, isDeleted) \
         VALUES (%(forum)s, %(title)s, %(isClosed)s, %(user)s, %(date)s, %(message)s, %(slug)s, %(isDeleted)s);"""
@@ -108,27 +73,35 @@ def create(html_method, request_body):
         return json.dumps({"code": 0, "response": thread_list[0]}, indent=4)
 
 
-def details(qs_dict):
-    if not qs_dict.get('thread'):
+@module.route("/details/", methods=["GET"])
+def details():
+    qs = get_json(request)
+
+    thread_id = qs.get('thread')
+    if not thread_id:
         return json.dumps({"code": 2, "response": "No 'thread' key"}, indent=4)
 
-    thread_id = qs_dict.get('thread')[0]
     thread_list = get_thread_list(id_value=thread_id)
     if thread_list == list():
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
     thread = thread_list[0]
 
+    related_values = list()
+    qs_related = qs.get('related')
+    if type(qs_related) is list:
+        related_values.extend(qs_related)
+    elif type(qs_related) is str:
+        related_values.append(qs_related)
+
     forum_related = False
     user_related = False
-    if qs_dict.get('related'):
-        for related_value in qs_dict.get('related'):
-            if related_value == 'forum':
-                forum_related = True
-            elif related_value == 'user':
-                user_related = True
-            else:
-                return json.dumps({"code": 3, "response": "Wrong related value"},
-                                  indent=4)
+    for related_value in related_values:
+        if related_value == 'forum':
+            forum_related = True
+        elif related_value == 'user':
+            user_related = True
+        else:
+            return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
 
     if forum_related:
         thread['forum'] = get_forum_dict(short_name=thread['forum'])
@@ -139,12 +112,9 @@ def details(qs_dict):
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
-def remove(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'thread.remove'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/remove/", methods=["POST"])
+def remove():
+    request_body = request.json
 
     thread = request_body.get('thread')
     sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %(thread)s;"""
@@ -157,11 +127,18 @@ def remove(html_method, request_body):
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
-def open_method(html_method, request_body, close_value=False):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.open'"}, indent=4)
+@module.route("/open/", methods=["POST"])
+def open_route():
+    return open_method(False)
 
-    request_body = json.loads(request_body.data)
+
+@module.route("/close/", methods=["POST"])
+def close_route():
+    return open_method(True)
+
+
+def open_method(close_value):
+    request_body = request.json
 
     thread = request_body.get('thread')
     if not close_value:
@@ -175,18 +152,9 @@ def open_method(html_method, request_body, close_value=False):
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
-def close(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.close'"}, indent=4)
-
-    return open_method(html_method, request_body, True)
-
-
-def restore(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.restore'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/restore/", methods=["POST"])
+def restore():
+    request_body = request.json
 
     thread = request_body.get('thread')
 
@@ -202,35 +170,24 @@ def restore(html_method, request_body):
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
-def list_posts(qs_dict):
-    thread = qs_dict.get('thread')[0]
+@module.route("/listPosts/", methods=["GET"])
+def list_posts():
+    qs = get_json(request)
 
-    since = ""
-    if qs_dict.get('since', ''):
-        since = qs_dict.get('since')[0]
-
-    limit = -1
-    if qs_dict.get('limit', ''):
-        limit = qs_dict.get('limit')[0]
-
-    order = 'desc'
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-
-    sort = 'flat'
-    if qs_dict.get('sort'):
-        sort = qs_dict.get('sort')[0]
+    thread = qs.get('thread')
+    since = qs.get('since', '')
+    limit = qs.get('limit', -1)
+    order = qs.get('order', 'desc')
+    sort = qs.get('sort', 'flat')
 
     post_list = get_post_list(thread=thread, since=since, limit=limit, sort=sort, order=order)
 
     return json.dumps({"code": 0, "response": post_list}, indent=4)
 
 
-def update(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.update'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/update/", methods=["POST"])
+def update():
+    request_body = request.json
 
     message = request_body.get('message')
     message = try_encode(message)
@@ -250,12 +207,18 @@ def update(html_method, request_body):
     return json.dumps({"code": 0, "response": thread_dict}, indent=4)
 
 
-def subscribe(html_method, request_body, unsubscribe_value=False):
-    if html_method != 'POST':
-        return json.dumps({"code": 3,
-                           "response": "Wrong html method for 'thread.subscribe/unsubscribe'"}, indent=4)
+@module.route("/subscribe/", methods=["POST"])
+def subscribe():
+    return subscribe_method(False)
 
-    request_body = json.loads(request_body.data)
+
+@module.route("/unsubscribe/", methods=["POST"])
+def unsubscribe():
+    return subscribe_method(True)
+
+
+def subscribe_method(unsubscribe_value=False):
+    request_body = request.json
 
     user = request_body.get('user')
     thread = request_body.get('thread')
@@ -274,15 +237,9 @@ def subscribe(html_method, request_body, unsubscribe_value=False):
     return json.dumps({"code": 0, "response": result_dict}, indent=4)
 
 
-def unsubscribe(html_method, request_body):
-    return subscribe(html_method, request_body, True)
-
-
-def vote(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'thread.vote'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/vote/", methods=["POST"])
+def vote():
+    request_body = request.json
 
     vote_value = request_body.get('vote')
     thread = request_body.get('thread')

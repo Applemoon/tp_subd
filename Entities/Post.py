@@ -1,57 +1,35 @@
 import MySQLdb
+from flask import Blueprint, request
+
 from common import *
 
-
-def do_method(db_method, html_method, request_body, qs_dict):
-    if db_method == 'list':
-        return list_method(qs_dict)
-    elif db_method == 'create':
-        return create(html_method, request_body)
-    elif db_method == 'details':
-        return details(qs_dict)
-    elif db_method == 'remove':
-        return remove(html_method, request_body)
-    elif db_method == 'restore':
-        return restore(html_method, request_body)
-    elif db_method == 'update':
-        return update(html_method, request_body)
-    elif db_method == 'vote':
-        return vote(html_method, request_body)
-
-    return json.dumps({"code": 3, "response": "Unknown post db method"}, indent=4)
+module = Blueprint('post', __name__, url_prefix='/db/api/post')
 
 
-def list_method(qs_dict):
-    if not qs_dict.get('forum') and not qs_dict.get('thread'):
+@module.route("/list/", methods=["GET"])
+def list_method():
+    qs = get_json(request)
+
+    forum = qs.get('forum')
+    thread = qs.get('thread')
+    if not forum and not thread:
         return json.dumps({"code": 2, "response": "No 'forum' or 'thread' key"}, indent=4)
 
-    since = ""
-    if qs_dict.get('since'):
-        since = qs_dict.get('since')[0]
+    since = qs.get('since', '')
+    limit = qs.get('limit', -1)
+    order = qs.get('order', '')
 
-    limit = -1
-    if qs_dict.get('limit'):
-        limit = qs_dict.get('limit')[0]
-
-    order = ""
-    if qs_dict.get('order'):
-        order = qs_dict.get('order')[0]
-
-    if qs_dict.get('forum'):
-        forum = qs_dict.get('forum')[0]
+    if forum:
         post_list = get_post_list(forum=forum, since=since, limit=limit, order=order)
     else:
-        thread = qs_dict.get('thread')[0]
         post_list = get_post_list(thread=thread, since=since, limit=limit, order=order)
 
     return json.dumps({"code": 0, "response": post_list}, indent=4)
 
 
-def create(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'post.create'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/create/", methods=["POST"])
+def create():
+    request_body = request.json
 
     # Required
     date = request_body.get('date')
@@ -64,28 +42,27 @@ def create(html_method, request_body):
 
     # Optional
     parent = request_body.get('parent', None)
-    is_approved_key = request_body.get('isApproved', False)
-    if is_approved_key:
+    if request_body.get('isApproved', False):
         is_approved = 1
     else:
         is_approved = 0
-    is_highlighted_key = request_body.get('isHighlighted', False)
-    if is_highlighted_key:
+
+    if request_body.get('isHighlighted', False):
         is_highlighted = 1
     else:
         is_highlighted = 0
-    is_edited_key = request_body.get('isEdited', False)
-    if is_edited_key:
+
+    if request_body.get('isEdited', False):
         is_edited = 1
     else:
         is_edited = 0
-    is_spam_key = request_body.get('isSpam', False)
-    if is_spam_key:
+
+    if request_body.get('isSpam', False):
         is_spam = 1
     else:
         is_spam = 0
-    is_deleted_key = request_body.get('isDeleted', False)
-    if is_deleted_key:
+
+    if request_body.get('isDeleted', False):
         is_deleted = 1
     else:
         is_deleted = 0
@@ -112,38 +89,47 @@ def create(html_method, request_body):
     finally:
         if post_list == list():
             return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-        if not post_list[0]:
+        elif not post_list[0]:
             return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
         return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
 
 
-def details(qs_dict):
-    if not qs_dict.get('post'):
+@module.route("/details/", methods=["GET"])
+def details():
+    qs = get_json(request)
+
+    post_id = qs.get('post')
+    if not post_id:
         return json.dumps({"code": 2, "response": "No 'post' key"}, indent=4)
 
-    post_id = qs_dict.get('post')[0]
     post_list = get_post_list(id_value=post_id)
     if post_list == list():
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    if not post_list[0]:
+    elif not post_list[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
     else:
         post = post_list[0]
 
+    related_values = list()
+    qs_related = qs.get('related')
+    if type(qs_related) is list:
+        related_values.extend(qs_related)
+    elif type(qs_related) is str:
+        related_values.append(qs_related)
+
     thread_related = False
     forum_related = False
     user_related = False
-    if qs_dict.get('related'):
-        for related_value in qs_dict.get('related'):
-            if related_value == 'forum':
-                forum_related = True
-            elif related_value == 'user':
-                user_related = True
-            elif related_value == 'thread':
-                thread_related = True
-            else:
-                return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
+    for related_value in related_values:
+        if related_value == 'forum':
+            forum_related = True
+        elif related_value == 'user':
+            user_related = True
+        elif related_value == 'thread':
+            thread_related = True
+        else:
+            return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
 
     if thread_related:
         thread_list = get_thread_list(id_value=post['thread'])
@@ -161,11 +147,19 @@ def details(qs_dict):
     return json.dumps({"code": 0, "response": post}, indent=4)
 
 
-def remove(html_method, request_body, do_remove=True):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'post.remove/restore'"}, indent=4)
+@module.route("/remove/", methods=["POST"])
+def remove():
+    return remove_method(True)
 
-    request_body = json.loads(request_body.data)
+
+@module.route("/restore/", methods=["POST"])
+def restore():
+    return remove_method(False)
+
+
+def remove_method(do_remove):
+    request_body = request.json
+
     post_id = request_body.get('post')
     post = get_post_list(id_value=post_id)[0]
     thread_id = post['thread']
@@ -180,15 +174,9 @@ def remove(html_method, request_body, do_remove=True):
     return json.dumps({"code": 0, "response": {"post": post_id}}, indent=4)
 
 
-def restore(html_method, request_body):
-    return remove(html_method, request_body, False)
-
-
-def update(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'post.update'"}, indent=4)
-
-    request_body = json.loads(request_body.data)
+@module.route("/update/", methods=["POST"])
+def update():
+    request_body = request.json
     post_id = request_body.get('post')
     message = request_body.get('message')
     message = try_encode(message)
@@ -202,26 +190,25 @@ def update(html_method, request_body):
     post_list = get_post_list(id_value=post_id)
     if not post_list:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    if not post_list[0]:
+    elif not post_list[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
 
 
-def vote(html_method, request_body):
-    if html_method != 'POST':
-        return json.dumps({"code": 3, "response": "Wrong html method for 'post.vote'"}, indent=4)
+@module.route("/vote/", methods=["POST"])
+def vote():
+    request_body = request.json
 
-    request_body = json.loads(request_body.data)
     post_id = request_body.get('post')
     vote_value = request_body.get('vote')
-    if vote_value != 1 and vote_value != -1:
-        return json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)
 
     if vote_value == 1:
         sql = """UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;"""
-    else:
+    elif vote_value == -1:
         sql = """UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;"""
+    else:
+        return json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)
 
     db = MyDatabase()
     db.execute(sql, {'post': post_id}, True)

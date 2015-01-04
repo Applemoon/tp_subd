@@ -10,11 +10,10 @@ class MyDatabase:
     def execute(self, sql, args=(), post=False):
         self.connection, self.cursor = self.init_connection_and_cursor()
 
-        try:
-            self.cursor.execute(sql, args)
-        except Exception as e:
-            print "Error %d: %s" % (e.args[0], e.args[1])
-            raise
+        # try:
+        self.cursor.execute(sql, args)
+        # except Exception as e:
+        #     print "Error %d: %s" % (e.args[0], e.args[1])
 
         if post:
             self.connection.commit()

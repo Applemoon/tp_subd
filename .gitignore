@@ -1,3 +1,5 @@
 *.pyc
 Other/
 .idea/
+env/
+uwsgi_latest_from_installer/
