@@ -2,7 +2,8 @@ import requests
 import json
 import sys
 
-url_base = "http://localhost:5000"
+# url_base = "http://localhost:5000"
+url_base = "http://localhost"
 
 val = sys.argv[1]
 if val == "forumcreate":
