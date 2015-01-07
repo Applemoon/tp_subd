@@ -22,7 +22,8 @@ class MyDatabase:
 
     @staticmethod
     def init_connection_and_cursor():
-        connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd", use_unicode=1, charset='utf8')
+        # connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd", use_unicode=1, charset='utf8')
+        connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd2", use_unicode=1, charset='utf8')
         cursor = connection.cursor()
         return connection, cursor
 

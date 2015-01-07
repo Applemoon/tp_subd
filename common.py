@@ -24,45 +24,27 @@ def try_encode(value):
     return value
 
 
-def get_forum_dict(short_name="", id_value=""):
-    if id_value != "":
-        sql_where = "forum = '{}'".format(id_value)
-    elif short_name != "":
-        sql_where = "short_name = '{}'".format(short_name)
-    else:
-        print "Wrong value for id_value or short_name in getForumDict"
+def get_forum_dict(short_name):
+    sql = """SELECT forum, name, short_name, user FROM Forum WHERE short_name = %(short_name)s LIMIT 1;"""
+    forum_sql = db.execute(sql, {'short_name': short_name})
+    if not forum_sql:
         return dict()
 
-    sql = """SELECT forum, name, short_name, user FROM Forum WHERE {};""".format(sql_where)
-    forum_list_sql = db.execute(sql)
-    if not forum_list_sql:
-        return dict()
-    elif not forum_list_sql[0]:
-        return dict()
-
-    forum_sql = forum_list_sql[0]
-    forum = dict()
-    forum['id'] = str_to_json(forum_sql[0])
-    forum['name'] = str_to_json(forum_sql[1])
-    forum['short_name'] = str_to_json(forum_sql[2])
-    forum['user'] = str_to_json(forum_sql[3])
-    return forum
+    forum_sql = forum_sql[0]
+    return {'id': str_to_json(forum_sql[0]),
+            'name': str_to_json(forum_sql[1]),
+            'short_name': str_to_json(forum_sql[2]),
+            'user': str_to_json(forum_sql[3])}
 
 
-def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1, sort='flat',
-                  order='desc', date=""):
+def get_post_list(user="", forum="", thread="", since="", limit=-1, sort='flat', order='desc'):
     # WHERE part
-    if id_value != "":
-        where_sql = "post = {}".format(id_value)
-    elif forum != "":
+    if forum != "":
         where_sql = "forum = '{}'".format(forum)
     elif thread != "":
         where_sql = "thread = {}".format(thread)
     elif user != "":
-        if date != "":
-            where_sql = "user = '{user_value}' AND date = '{date_value}'".format(user_value=user, date_value=date)
-        else:
-            where_sql = "user = '{user_value}'".format(user_value=user)
+        where_sql = "user = '{}'".format(user)
     else:
         print "Can't find search field in getPostList"
         return list()
@@ -109,37 +91,59 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
     post_list_sql = db.execute(sql)
     if not post_list_sql:
         return list()
-    if not post_list_sql[0]:
-        return list()
 
     post_list = list()
     for post_sql in post_list_sql:
-        post = dict()
-        post['id'] = str_to_json(post_sql[0])
-        post['user'] = str_to_json(post_sql[1])
-        post['thread'] = str_to_json(post_sql[2])
-        post['forum'] = str_to_json(post_sql[3])
-        post['message'] = str_to_json(post_sql[4])
-        post['parent'] = str_to_json(post_sql[5])
-        post['date'] = post_sql[6].strftime('%Y-%m-%d %H:%M:%S')
-        post['likes'] = str_to_json(post_sql[7])
-        post['dislikes'] = str_to_json(post_sql[8])
-        post['points'] = str_to_json(post_sql[9])
-        post['isSpam'] = str_to_json(post_sql[10], True)
-        post['isEdited'] = str_to_json(post_sql[11], True)
-        post['isDeleted'] = str_to_json(post_sql[12], True)
-        post['isHighlighted'] = str_to_json(post_sql[13], True)
-        post['isApproved'] = str_to_json(post_sql[14], True)
-
-        post_list.append(post)
+        post_list.append({'id': str_to_json(post_sql[0]),
+                          'user': str_to_json(post_sql[1]),
+                          'thread': str_to_json(post_sql[2]),
+                          'forum': str_to_json(post_sql[3]),
+                          'message': str_to_json(post_sql[4]),
+                          'parent': str_to_json(post_sql[5]),
+                          'date': post_sql[6].strftime('%Y-%m-%d %H:%M:%S'),
+                          'likes': str_to_json(post_sql[7]),
+                          'dislikes': str_to_json(post_sql[8]),
+                          'points': str_to_json(post_sql[9]),
+                          'isSpam': str_to_json(post_sql[10], True),
+                          'isEdited': str_to_json(post_sql[11], True),
+                          'isDeleted': str_to_json(post_sql[12], True),
+                          'isHighlighted': str_to_json(post_sql[13], True),
+                          'isApproved': str_to_json(post_sql[14], True)})
 
     return post_list
 
 
-def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1, order="desc"):
-    if id_value != "":
-        where_sql = "thread = {}".format(id_value)
-    elif title != "":
+def get_post_by_id(id_value):
+    where_sql = "post = {}".format(id_value)
+
+    sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
+        isSpam, isEdited, isDeleted, isHighlighted, isApproved FROM Post \
+        WHERE post = %(id)s LIMIT 1;""".format(where_value=where_sql)
+
+    post_list_sql = db.execute(sql, {'id': id_value})
+    if not post_list_sql:
+        return list()
+
+    post_sql = post_list_sql[0]
+    return {'id': str_to_json(post_sql[0]),
+            'user': str_to_json(post_sql[1]),
+            'thread': str_to_json(post_sql[2]),
+            'forum': str_to_json(post_sql[3]),
+            'message': str_to_json(post_sql[4]),
+            'parent': str_to_json(post_sql[5]),
+            'date': post_sql[6].strftime('%Y-%m-%d %H:%M:%S'),
+            'likes': str_to_json(post_sql[7]),
+            'dislikes': str_to_json(post_sql[8]),
+            'points': str_to_json(post_sql[9]),
+            'isSpam': str_to_json(post_sql[10], True),
+            'isEdited': str_to_json(post_sql[11], True),
+            'isDeleted': str_to_json(post_sql[12], True),
+            'isHighlighted': str_to_json(post_sql[13], True),
+            'isApproved': str_to_json(post_sql[14], True)}
+
+
+def get_thread_list(title="", forum="", user="", since="", limit=-1, order="desc"):
+    if title != "":
         where_sql = "title = '{}'".format(title)
     elif forum != "":
         where_sql = "forum = '{}'".format(forum)
@@ -183,71 +187,82 @@ def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1
 
     thread_list = list()
     for thread_sql in thread_list_sql:
-        thread = dict()
-        thread['id'] = str_to_json(thread_sql[0])
-        thread['title'] = str_to_json(thread_sql[1])
-        thread['user'] = str_to_json(thread_sql[2])
-        thread['message'] = str_to_json(thread_sql[3])
-        thread['forum'] = str_to_json(thread_sql[4])
-        thread['isDeleted'] = str_to_json(thread_sql[5], True)
-        thread['isClosed'] = str_to_json(thread_sql[6], True)
-        date = thread_sql[7].strftime('%Y-%m-%d %H:%M:%S')
-        thread['date'] = str_to_json(date)
-        thread['slug'] = str_to_json(thread_sql[8])
-        thread['likes'] = str_to_json(thread_sql[9])
-        thread['dislikes'] = str_to_json(thread_sql[10])
-        thread['points'] = str_to_json(thread_sql[11])
-        thread['posts'] = str_to_json(thread_sql[12])
-
-        thread_list.append(thread)
+        thread_list.append({'id': str_to_json(thread_sql[0]),
+                            'title': str_to_json(thread_sql[1]),
+                            'user': str_to_json(thread_sql[2]),
+                            'message': str_to_json(thread_sql[3]),
+                            'forum': str_to_json(thread_sql[4]),
+                            'isDeleted': str_to_json(thread_sql[5], True),
+                            'isClosed': str_to_json(thread_sql[6], True),
+                            'date': thread_sql[7].strftime('%Y-%m-%d %H:%M:%S'),
+                            'slug': str_to_json(thread_sql[8]),
+                            'likes': str_to_json(thread_sql[9]),
+                            'dislikes': str_to_json(thread_sql[10]),
+                            'points': str_to_json(thread_sql[11]),
+                            'posts': str_to_json(thread_sql[12])})
 
     return thread_list
 
 
+def get_thread_by_id(id_value):
+    sql = """SELECT thread, title, user, message, forum, isDeleted, isClosed, date, slug, likes, dislikes, \
+        points, posts FROM Thread WHERE thread = %(thread)s LIMIT 1;"""
+
+    thread_list_sql = db.execute(sql, {'thread': id_value})
+    if not thread_list_sql:
+        return list()
+
+    thread_sql = thread_list_sql[0]
+    return {'id': str_to_json(thread_sql[0]),
+            'title': str_to_json(thread_sql[1]),
+            'user': str_to_json(thread_sql[2]),
+            'message': str_to_json(thread_sql[3]),
+            'forum': str_to_json(thread_sql[4]),
+            'isDeleted': str_to_json(thread_sql[5], True),
+            'isClosed': str_to_json(thread_sql[6], True),
+            'date': thread_sql[7].strftime('%Y-%m-%d %H:%M:%S'),
+            'slug': str_to_json(thread_sql[8]),
+            'likes': str_to_json(thread_sql[9]),
+            'dislikes': str_to_json(thread_sql[10]),
+            'points': str_to_json(thread_sql[11]),
+            'posts': str_to_json(thread_sql[12])}
+
+
 def get_user_dict(email):
-    sql = """SELECT user, email, name, username, isAnonymous, about FROM User WHERE email = %(email)s;"""
-    user_list_sql = db.execute(sql, {'email': email})
+    user_list_sql = db.execute("""SELECT user, email, name, username, isAnonymous, about FROM User \
+        WHERE email = %(email)s;""", {'email': email})
     if not user_list_sql:
-        return dict()
-    if not user_list_sql[0]:
         return dict()
 
     user_sql = user_list_sql[0]
 
-    user = dict()
-    user["id"] = str_to_json(user_sql[0])
-    user["email"] = str_to_json(user_sql[1])
-    user["name"] = str_to_json(user_sql[2])
-    user["username"] = str_to_json(user_sql[3])
-    user["isAnonymous"] = str_to_json(user_sql[4], True)
-    user["about"] = str_to_json(user_sql[5])
-
-    return user
+    return {'id': str_to_json(user_sql[0]),
+            'email': str_to_json(user_sql[1]),
+            'name': str_to_json(user_sql[2]),
+            'username': str_to_json(user_sql[3]),
+            'isAnonymous': str_to_json(user_sql[4], True),
+            'about': str_to_json(user_sql[5])}
 
 
 def inc_posts_for_thread(thread_id):
-    sql = """UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;"""
-    db.execute(sql, {'thread': thread_id}, post=True)
+    db.execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
 
 
 def dec_posts_for_thread(thread_id):
-    sql = """UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;"""
-    db.execute(sql, {'thread': thread_id}, post=True)
+    db.execute("""UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
 
 
 def remove_post(post_id):
-    sql = """UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;"""
-    db.execute(sql, {'post': post_id}, True)
+    db.execute("""UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;""", {'post': post_id}, True)
 
 
 def restore_post(post_id):
-    sql = """UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;"""
-    db.execute(sql, {'post': post_id}, True)
+    db.execute("""UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;""", {'post': post_id}, True)
 
 
 def get_followers_list(email):
-    sql = """SELECT follower FROM Follower WHERE following = %(following)s;"""
-    followers_list_sql = db.execute(sql, {'following': email})
+    followers_list_sql = db.execute("""SELECT follower FROM Follower WHERE following = %(following)s;""",
+                                    {'following': email})
     if not followers_list_sql:
         return list()
 
@@ -255,8 +270,8 @@ def get_followers_list(email):
 
 
 def get_following_list(email):
-    sql = """SELECT following FROM Follower WHERE follower = %(follower)s;"""
-    following_list = db.execute(sql, {'follower': email})
+    following_list = db.execute("""SELECT following FROM Follower WHERE follower = %(follower)s;""",
+                                {'follower': email})
     if not following_list:
         return list()
 
@@ -264,8 +279,8 @@ def get_following_list(email):
 
 
 def get_subscribed_threads_list(email):
-    sql = """SELECT thread FROM Subscription WHERE subscriber = %(subscriber)s;"""
-    subscriptions_list = db.execute(sql, {'subscriber': email})
+    subscriptions_list = db.execute("""SELECT thread FROM Subscription WHERE subscriber = %(subscriber)s;""",
+                                    {'subscriber': email})
     result = list()
     for thread in subscriptions_list:
         result.append(thread[0])

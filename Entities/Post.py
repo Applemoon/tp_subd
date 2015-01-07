@@ -1,7 +1,9 @@
-import MySQLdb
+import json
 from flask import Blueprint, request
 
-from common import *
+from Entities.MyDatabase import db
+from common import get_json, try_encode, inc_posts_for_thread, get_forum_dict, get_user_dict, \
+    remove_post, dec_posts_for_thread, restore_post, get_post_list, get_post_by_id, get_thread_by_id
 
 module = Blueprint('post', __name__, url_prefix='/db/api/post')
 
@@ -34,9 +36,9 @@ def create():
     # Required
     date = request_body.get('date')
     thread = request_body.get('thread')
-    message = try_encode(request_body.get('message'))
+    message = request_body.get('message')
     user = request_body.get('user')
-    forum = try_encode(request_body.get('forum'))
+    forum = request_body.get('forum')
 
     # Optional
     parent = request_body.get('parent', None)
@@ -73,44 +75,26 @@ def create():
             'isSpam': is_spam, 'isEdited': is_edited, 'isDeleted': is_deleted, 'isHighlighted': is_highlighted,
             'isApproved': is_approved}
 
-    # post_list = list()
-    # try:
-    #     post_id = db.execute(sql, args, True)
-    # except MySQLdb.IntegrityError, message:
-    #     print message[0]
-    #     post_list = get_post_list(user=user, date=date)
-    # else:
-    #     post_list = get_post_list(id_value=post_id)
-    #     inc_posts_for_thread(thread)
-    # finally:
-    #     if not post_list:
-    #         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    #
-    #     return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
-
     post_id = db.execute(sql, args, True)
-    post_list = get_post_list(id_value=post_id)
+    post = get_post_by_id(post_id)
     inc_posts_for_thread(thread)
-    if not post_list:
+    if not post:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
-    return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
+    return json.dumps({"code": 0, "response": post}, indent=4)
 
 
 @module.route("/details/", methods=["GET"])
 def details():
-    print "post/details"
     qs = get_json(request)
 
     post_id = qs.get('post')
     if not post_id:
         return json.dumps({"code": 2, "response": "No 'post' key"}, indent=4)
 
-    post_list = get_post_list(id_value=post_id)
-    if not post_list:
+    post = get_post_by_id(post_id)
+    if not post:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    else:
-        post = post_list[0]
 
     related_values = list()
     qs_related = qs.get('related')
@@ -133,11 +117,7 @@ def details():
             return json.dumps({"code": 3, "response": "Wrong related value"}, indent=4)
 
     if thread_related:
-        thread_list = get_thread_list(id_value=post['thread'])
-        if thread_list == list():
-            post['thread'] = dict()
-        else:
-            post['thread'] = thread_list[0]
+        post['thread'] = get_thread_by_id(post['thread'])
 
     if forum_related:
         post['forum'] = get_forum_dict(short_name=post['forum'])
@@ -162,7 +142,7 @@ def remove_method(do_remove):
     request_body = request.json
 
     post_id = request_body.get('post')
-    post = get_post_list(id_value=post_id)[0]
+    post = get_post_by_id(post_id)
     thread_id = post['thread']
 
     if do_remove:
@@ -181,16 +161,14 @@ def update():
     post_id = request_body.get('post')
     message = try_encode(request_body.get('message'))
 
-    sql = """UPDATE Post SET message = %(message)s WHERE post = %(post)s;"""
-
     args = {'message': message, 'post': post_id}
-    db.execute(sql, args, True)
+    db.execute("""UPDATE Post SET message = %(message)s WHERE post = %(post)s;""", args, True)
 
-    post_list = get_post_list(id_value=post_id)
-    if not post_list:
+    post = get_post_by_id(post_id)
+    if not post:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
-    return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
+    return json.dumps({"code": 0, "response": post}, indent=4)
 
 
 @module.route("/vote/", methods=["POST"])
@@ -201,16 +179,16 @@ def vote():
     vote_value = request_body.get('vote')
 
     if vote_value == 1:
-        sql = """UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;"""
+        db.execute("""UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;""",
+                   {'post': post_id}, True)
     elif vote_value == -1:
-        sql = """UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;"""
+        db.execute("""UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;""",
+                   {'post': post_id}, True)
     else:
         return json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)
 
-    db.execute(sql, {'post': post_id}, True)
-
-    post_list = get_post_list(id_value=post_id)
-    if not post_list:
+    post = get_post_by_id(post_id)
+    if not post:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
-    return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
+    return json.dumps({"code": 0, "response": post}, indent=4)

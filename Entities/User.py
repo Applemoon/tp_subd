@@ -1,7 +1,10 @@
+import json
 import MySQLdb
 from flask import Blueprint, request
 
-from common import *
+from Entities.MyDatabase import db
+from common import try_encode, MYSQL_DUPLICATE_ENTITY_ERROR, get_user_dict, get_json, get_followers_list, \
+    get_following_list, get_subscribed_threads_list, get_post_list, str_to_json
 
 module = Blueprint('user', __name__, url_prefix='/db/api/user')
 
@@ -71,16 +74,13 @@ def follow_method(do_unfollow):
     follower = request_body.get('follower')
     followee = request_body.get('followee')
 
-    if not do_unfollow:
-        sql = """INSERT INTO Follower (follower, following) VALUES (%(follower)s, %(following)s);"""
-    else:
-        sql = """DELETE FROM Follower WHERE follower = %(follower)s AND following = %(following)s;"""
-
     args = {'follower': follower, 'following': followee}
+    if not do_unfollow:
+        db.execute("""INSERT INTO Follower (follower, following) VALUES (%(follower)s, %(following)s);""", args, True)
+    else:
+        db.execute("""DELETE FROM Follower WHERE follower = %(follower)s AND following = %(following)s;""", args, True)
 
-    db.execute(sql, args, True)
-    user_dict = get_user_dict(follower)
-    return json.dumps({"code": 0, "response": user_dict}, indent=4)
+    return json.dumps({"code": 0, "response": get_user_dict(follower)}, indent=4)
 
 
 @module.route("/listPosts/", methods=["GET"])
@@ -107,11 +107,9 @@ def update_profile():
     user = try_encode(request_body.get('user'))
     name = try_encode(request_body.get('name'))
 
-    sql = """UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;"""
     args = {'about': about, 'name': name, 'email': user}
-    db.execute(sql, args, True)
-    user = get_user_dict(user)
-    return json.dumps({"code": 0, "response": user}, indent=4)
+    db.execute("""UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;""", args, True)
+    return json.dumps({"code": 0, "response": get_user_dict(user)}, indent=4)
 
 
 @module.route("/listFollowers/", methods=["GET"])
@@ -171,17 +169,15 @@ def list_followers_method(is_following):
 
     user_list = list()
     for user_sql in user_list_sql:
-        user = dict()
-        user['about'] = str_to_json(user_sql[0])
-        user['email'] = str_to_json(user_sql[1])
-        user['id'] = str_to_json(user_sql[2])
-        user['isAnonymous'] = str_to_json(user_sql[3])
-        user['name'] = str_to_json(user_sql[4])
-        user['username'] = str_to_json(user_sql[5])
-        user['followers'] = get_followers_list(user['email'])
-        user['following'] = get_following_list(user['email'])
-        user['subscriptions'] = get_subscribed_threads_list(user['email'])
-
-        user_list.append(user)
+        follower_email = str_to_json(user_sql[1])
+        user_list.append({'about': str_to_json(user_sql[0]),
+                          'email': follower_email,
+                          'id': str_to_json(user_sql[2]),
+                          'isAnonymous': str_to_json(user_sql[3]),
+                          'name': str_to_json(user_sql[4]),
+                          'username': str_to_json(user_sql[5]),
+                          'followers': get_followers_list(follower_email),
+                          'following': get_following_list(follower_email),
+                          'subscriptions': get_subscribed_threads_list(follower_email)})
 
     return json.dumps({"code": 0, "response": user_list}, indent=4)

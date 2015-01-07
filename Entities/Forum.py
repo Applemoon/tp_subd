@@ -1,7 +1,10 @@
+import json
 import MySQLdb
 from flask import Blueprint, request
 
-from common import *
+from Entities.MyDatabase import db
+from common import get_forum_dict, get_json, get_user_dict, \
+    get_subscribed_threads_list, get_post_list, get_thread_list, str_to_json, get_thread_by_id
 
 module = Blueprint('forum', __name__, url_prefix='/db/api/forum')
 
@@ -11,13 +14,12 @@ def create():
     request_body = request.json
 
     name = request_body.get('name')
-    short_name = try_encode(request_body.get('short_name'))
+    short_name = request_body.get('short_name')
     user = request_body.get('user')
-    sql = """INSERT INTO Forum (name, short_name, user) VALUES (%(name)s, %(short_name)s, %(user)s);"""
-    args = {'name': name, 'short_name': short_name, 'user': user}
 
     try:
-        db.execute(sql, args, True)
+        db.execute("""INSERT INTO Forum (name, short_name, user) VALUES (%(name)s, %(short_name)s, %(user)s);""",
+                   {'name': name, 'short_name': short_name, 'user': user}, True)
     except MySQLdb.IntegrityError, message:
         print message[0]
     finally:
@@ -38,12 +40,7 @@ def details():
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     if qs.get('related', '') == 'user':
-        user = get_user_dict(forum_dict['user'])
-        user['followers'] = get_followers_list(user['email'])
-        user['following'] = get_following_list(user['email'])
-        user['subscriptions'] = get_subscribed_threads_list(user['email'])
-
-        forum_dict['user'] = user
+        forum_dict['user'] = get_user_dict(forum_dict['user'])
 
     return json.dumps({"code": 0, "response": forum_dict}, indent=4)
 
@@ -56,8 +53,6 @@ def list_posts():
 
     if not forum:
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
-
-    forum = try_encode(forum)
 
     # Related part
     related_values = list()
@@ -92,7 +87,7 @@ def list_posts():
             post['user'] = get_user_dict(post['user'])
 
         if thread_related:
-            post['thread'] = get_thread_list(id_value=post['thread'])[0]
+            post['thread'] = get_thread_by_id(post['thread'])
 
         if forum_related:
             post['forum'] = get_forum_dict(short_name=post['forum'])
@@ -135,8 +130,6 @@ def list_threads():
     for thread in thread_list:
         if user_related:
             thread['user'] = get_user_dict(thread['user'])
-            thread['user']['followers'] = get_followers_list(thread['user']['email'])
-            thread['user']['following'] = get_following_list(thread['user']['email'])
             thread['user']['subscriptions'] = get_subscribed_threads_list(thread['user']['email'])
 
         if forum_related:
@@ -189,17 +182,13 @@ def list_users():
 
     user_list = list()
     for user_sql in user_list_sql:
-        user = dict()
-        user['id'] = str_to_json(user_sql[0])
-        user['email'] = str_to_json(user_sql[1])
-        user['name'] = str_to_json(user_sql[2])
-        user['username'] = str_to_json(user_sql[3])
-        user['isAnonymous'] = str_to_json(user_sql[4])
-        user['about'] = str_to_json(user_sql[5])
-        user['followers'] = get_followers_list(user['email'])
-        user['following'] = get_following_list(user['email'])
-        user['subscriptions'] = get_subscribed_threads_list(user['email'])
-
-        user_list.append(user)
+        email = str_to_json(user_sql[1])
+        user_list.append({'id': str_to_json(user_sql[0]),
+                          'email': email,
+                          'name': str_to_json(user_sql[2]),
+                          'username': str_to_json(user_sql[3]),
+                          'isAnonymous': str_to_json(user_sql[4]),
+                          'about': str_to_json(user_sql[5]),
+                          'subscriptions': get_subscribed_threads_list(email)})
 
     return json.dumps({"code": 0, "response": user_list}, indent=4)

@@ -1,7 +1,10 @@
+import json
 import MySQLdb
 from flask import Blueprint, request
 
-from common import *
+from Entities.MyDatabase import db
+from common import get_json, get_thread_list, try_encode, get_forum_dict, get_user_dict, get_post_list, remove_post, \
+    restore_post, str_to_json, get_thread_by_id
 
 module = Blueprint('thread', __name__, url_prefix='/db/api/thread')
 
@@ -34,7 +37,7 @@ def create():
     request_body = request.json
 
     # Required
-    forum = try_encode(request_body.get('forum'))
+    forum = request_body.get('forum')
     title = try_encode(request_body.get('title'))
     if request_body.get('isClosed'):
         is_closed = 1
@@ -43,9 +46,7 @@ def create():
     user = request_body.get('user')
     date = request_body.get('date')
     message = request_body.get('message')
-    message = try_encode(message)
     slug = request_body.get('slug')
-    slug = try_encode(slug)
 
     # Optional
     if request_body.get('isDeleted', False):
@@ -78,10 +79,9 @@ def details():
     if not thread_id:
         return json.dumps({"code": 2, "response": "No 'thread' key"}, indent=4)
 
-    thread_list = get_thread_list(id_value=thread_id)
-    if thread_list == list():
+    thread = get_thread_by_id(thread_id)
+    if thread == list():
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    thread = thread_list[0]
 
     related_values = list()
     qs_related = qs.get('related')
@@ -114,53 +114,39 @@ def remove():
     request_body = request.json
 
     thread = request_body.get('thread')
-    sql = """UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %(thread)s;"""
     post_list = get_post_list(thread=thread)
     for post in post_list:
         remove_post(post['id'])
 
-    db.execute(sql, {'thread': thread}, True)
+    db.execute("""UPDATE Thread SET isDeleted = 1, posts = 0 WHERE thread = %(thread)s;""", {'thread': thread}, True)
 
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
 @module.route("/open/", methods=["POST"])
 def open_route():
-    return open_method(False)
+    thread = request.json.get('thread')
+    db.execute("""UPDATE Thread SET isClosed = 0 WHERE thread = %(thread)s;""", {'thread': thread}, True)
+    return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
 @module.route("/close/", methods=["POST"])
 def close_route():
-    return open_method(True)
-
-
-def open_method(close_value):
-    request_body = request.json
-
-    thread = request_body.get('thread')
-    if not close_value:
-        sql = """UPDATE Thread SET isClosed = 0 WHERE thread = %(thread)s;"""
-    else:
-        sql = """UPDATE Thread SET isClosed = 1 WHERE thread = %(thread)s;"""
-
-    db.execute(sql, {'thread': thread}, True)
-
+    thread = request.json.get('thread')
+    db.execute("""UPDATE Thread SET isClosed = 1 WHERE thread = %(thread)s;""", {'thread': thread}, True)
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
 
 @module.route("/restore/", methods=["POST"])
 def restore():
-    request_body = request.json
-
-    thread = request_body.get('thread')
+    thread = request.json.get('thread')
 
     post_list = get_post_list(thread=thread)
     for post in post_list:
         restore_post(post['id'])
 
-    sql = """UPDATE Thread SET isDeleted = 0, posts = %(posts)s WHERE thread = %(thread)s;"""
-    args = {'posts': len(post_list), 'thread': thread}
-    db.execute(sql, args, True)
+    db.execute("""UPDATE Thread SET isDeleted = 0, posts = %(posts)s WHERE thread = %(thread)s;""",
+               {'posts': len(post_list), 'thread': thread}, True)
 
     return json.dumps({"code": 0, "response": thread}, indent=4)
 
@@ -184,20 +170,13 @@ def list_posts():
 def update():
     request_body = request.json
 
-    message = try_encode(request_body.get('message'))
+    message = request_body.get('message')
     slug = request_body.get('slug')
     thread = request_body.get('thread')
 
-    sql = """UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;"""
-    args = {'message': message, 'slug': slug, 'thread': thread}
-    db.execute(sql, args, True)
-    thread_list = get_thread_list(id_value=thread)
-    if thread_list != list():
-        thread_dict = thread_list[0]
-    else:
-        thread_dict = dict()
-
-    return json.dumps({"code": 0, "response": thread_dict}, indent=4)
+    db.execute("""UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;""",
+               {'message': message, 'slug': slug, 'thread': thread}, True)
+    return json.dumps({"code": 0, "response": get_thread_by_id(thread)}, indent=4)
 
 
 @module.route("/subscribe/", methods=["POST"])
@@ -216,16 +195,13 @@ def subscribe_method(unsubscribe_value=False):
     user = request_body.get('user')
     thread = request_body.get('thread')
     if not unsubscribe_value:
-        sql = """INSERT INTO Subscription (subscriber, thread) VALUES (%(subscriber)s, %(thread)s);"""
+        db.execute("""INSERT INTO Subscription (subscriber, thread) VALUES (%(subscriber)s, %(thread)s);""",
+                   {'subscriber': user, 'thread': thread}, True)
     else:
-        sql = """DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;"""
+        db.execute("""DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;""",
+                   {'subscriber': user, 'thread': thread}, True)
 
-    args = {'subscriber': user, 'thread': thread}
-    db.execute(sql, args, True)
-    result_dict = dict()
-    result_dict['thread'] = thread
-    result_dict['user'] = str_to_json(user)
-
+    result_dict = {'thread': thread, 'user': str_to_json(user)}
     return json.dumps({"code": 0, "response": result_dict}, indent=4)
 
 
@@ -234,18 +210,13 @@ def vote():
     request_body = request.json
 
     vote_value = request_body.get('vote')
-    thread = request_body.get('thread')
+    thread_id = request_body.get('thread')
 
     if vote_value == 1:
-        sql = """UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %(thread)s;"""
+        db.execute("""UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %(thread)s;""",
+                   {'thread': thread_id}, True)
     else:
-        sql = """UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;"""
+        db.execute("""UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;""",
+                   {'thread': thread_id}, True)
 
-    db.execute(sql, {'thread': thread}, True)
-
-    thread_dict = dict()
-    thread_list = get_thread_list(id_value=thread)
-    if thread_list != list():
-        thread_dict = thread_list[0]
-
-    return json.dumps({"code": 0, "response": thread_dict}, indent=4)
+    return json.dumps({"code": 0, "response": get_thread_by_id(thread_id)}, indent=4)
