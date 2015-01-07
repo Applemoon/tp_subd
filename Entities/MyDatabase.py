@@ -1,41 +1,30 @@
 import MySQLdb
-import json
 
 
 class MyDatabase:
     def __init__(self):
-        self.connection, self.cursor = self.init_connection_and_cursor()
+        # self.connection = None
+        #     self.cursor = None
+        # self.connection, self.cursor = self.init_connection_and_cursor()
         pass
 
     def execute(self, sql, args=(), post=False):
-        self.connection, self.cursor = self.init_connection_and_cursor()
-
-        # try:
-        self.cursor.execute(sql, args)
-        # except Exception as e:
-        #     print "Error %d: %s" % (e.args[0], e.args[1])
-
+        # self.connection, self.cursor = self.init_connection_and_cursor()
+        connection, cursor = self.init_connection_and_cursor()
+        cursor.execute(sql, args)
         if post:
-            self.connection.commit()
-        self.connection.close()
-        return self.cursor.fetchall()
+            connection.commit()
+            connection.close()
+            return cursor.lastrowid
 
-    def clear(self):
-        self.execute("""TRUNCATE TABLE Forum;""", post=True)
-        self.execute("""TRUNCATE TABLE User;""", post=True)
-        self.execute("""TRUNCATE TABLE Post;""")
-        self.execute("""TRUNCATE TABLE Thread;""", post=True)
-        self.execute("""TRUNCATE TABLE Subscription;""", post=True)
-        self.execute("""TRUNCATE TABLE Follower;""", post=True)
-
-        return json.dumps({"code": 0, "response": "OK"})
-
-    def get_last_row_id(self):
-        return self.cursor.lastrowid
+        connection.close()
+        return cursor.fetchall()
 
     @staticmethod
     def init_connection_and_cursor():
-        connection = MySQLdb.connect(host="localhost", user="subd_user",
-                                     db="tp_subd", use_unicode=1, charset='utf8')
+        connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd", use_unicode=1, charset='utf8')
         cursor = connection.cursor()
         return connection, cursor
+
+
+db = MyDatabase()

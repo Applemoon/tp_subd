@@ -11,12 +11,10 @@ def create():
     request_body = request.json
 
     name = request_body.get('name')
-    short_name = request_body.get('short_name')
-    short_name = try_encode(short_name)
+    short_name = try_encode(request_body.get('short_name'))
     user = request_body.get('user')
     sql = """INSERT INTO Forum (name, short_name, user) VALUES (%(name)s, %(short_name)s, %(user)s);"""
     args = {'name': name, 'short_name': short_name, 'user': user}
-    db = MyDatabase()
 
     try:
         db.execute(sql, args, True)
@@ -36,7 +34,7 @@ def details():
         return json.dumps({"code": 2, "response": "No 'forum' key"}, indent=4)
 
     forum_dict = get_forum_dict(short_name=short_name)
-    if forum_dict == dict():
+    if not forum_dict:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     if qs.get('related', '') == 'user':
@@ -187,7 +185,6 @@ def list_users():
         WHERE Post.forum = %(forum)s {snc_sql} GROUP BY User.user {ord_sql} {lim_sql};""".format(
         snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
 
-    db = MyDatabase()
     user_list_sql = db.execute(sql, {'forum': qs.get('forum')})
 
     user_list = list()

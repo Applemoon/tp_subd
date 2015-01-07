@@ -34,11 +34,9 @@ def create():
     # Required
     date = request_body.get('date')
     thread = request_body.get('thread')
-    message = request_body.get('message')
-    message = try_encode(message)
+    message = try_encode(request_body.get('message'))
     user = request_body.get('user')
-    forum = request_body.get('forum')
-    forum = try_encode(forum)
+    forum = try_encode(request_body.get('forum'))
 
     # Optional
     parent = request_body.get('parent', None)
@@ -75,28 +73,33 @@ def create():
             'isSpam': is_spam, 'isEdited': is_edited, 'isDeleted': is_deleted, 'isHighlighted': is_highlighted,
             'isApproved': is_approved}
 
-    db = MyDatabase()
+    # post_list = list()
+    # try:
+    #     post_id = db.execute(sql, args, True)
+    # except MySQLdb.IntegrityError, message:
+    #     print message[0]
+    #     post_list = get_post_list(user=user, date=date)
+    # else:
+    #     post_list = get_post_list(id_value=post_id)
+    #     inc_posts_for_thread(thread)
+    # finally:
+    #     if not post_list:
+    #         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
+    #
+    #     return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
 
-    post_list = list()
-    try:
-        db.execute(sql, args, True)
-    except MySQLdb.IntegrityError, message:
-        print message[0]
-        post_list = get_post_list(user=user, date=date)
-    else:
-        post_list = get_post_list(id_value=db.cursor.lastrowid)
-        inc_posts_for_thread(thread)
-    finally:
-        if post_list == list():
-            return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-        elif not post_list[0]:
-            return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
+    post_id = db.execute(sql, args, True)
+    post_list = get_post_list(id_value=post_id)
+    inc_posts_for_thread(thread)
+    if not post_list:
+        return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
-        return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
+    return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
 
 
 @module.route("/details/", methods=["GET"])
 def details():
+    print "post/details"
     qs = get_json(request)
 
     post_id = qs.get('post')
@@ -104,9 +107,7 @@ def details():
         return json.dumps({"code": 2, "response": "No 'post' key"}, indent=4)
 
     post_list = get_post_list(id_value=post_id)
-    if post_list == list():
-        return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    elif not post_list[0]:
+    if not post_list:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
     else:
         post = post_list[0]
@@ -178,19 +179,15 @@ def remove_method(do_remove):
 def update():
     request_body = request.json
     post_id = request_body.get('post')
-    message = request_body.get('message')
-    message = try_encode(message)
+    message = try_encode(request_body.get('message'))
 
     sql = """UPDATE Post SET message = %(message)s WHERE post = %(post)s;"""
 
-    db = MyDatabase()
     args = {'message': message, 'post': post_id}
     db.execute(sql, args, True)
 
     post_list = get_post_list(id_value=post_id)
     if not post_list:
-        return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    elif not post_list[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     return json.dumps({"code": 0, "response": post_list[0]}, indent=4)
@@ -210,13 +207,10 @@ def vote():
     else:
         return json.dumps({"code": 3, "response": "Wrong 'vote' value'"}, indent=4)
 
-    db = MyDatabase()
     db.execute(sql, {'post': post_id}, True)
 
     post_list = get_post_list(id_value=post_id)
     if not post_list:
-        return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    if not post_list[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     return json.dumps({"code": 0, "response": post_list[0]}, indent=4)

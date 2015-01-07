@@ -1,7 +1,7 @@
 import json
 import urlparse
 
-from Entities.MyDatabase import MyDatabase
+from Entities.MyDatabase import db
 
 
 MYSQL_DUPLICATE_ENTITY_ERROR = 1062
@@ -11,7 +11,6 @@ def str_to_json(value, is_bool=False):
     if is_bool:
         return value != 0
 
-    # if value == "None":
     if value == "NULL":
         return None
 
@@ -35,11 +34,10 @@ def get_forum_dict(short_name="", id_value=""):
         return dict()
 
     sql = """SELECT forum, name, short_name, user FROM Forum WHERE {};""".format(sql_where)
-    db = MyDatabase()
     forum_list_sql = db.execute(sql)
     if not forum_list_sql:
         return dict()
-    if not forum_list_sql[0]:
+    elif not forum_list_sql[0]:
         return dict()
 
     forum_sql = forum_list_sql[0]
@@ -108,7 +106,6 @@ def get_post_list(user="", forum="", thread="", id_value="", since="", limit=-1,
         order_value=order_sql,
         sort_value=sort_sql)
 
-    db = MyDatabase()
     post_list_sql = db.execute(sql)
     if not post_list_sql:
         return list()
@@ -180,7 +177,6 @@ def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1
         points, posts FROM Thread WHERE {where_value} {since_value} {order_value} {limit_value};""".format(
         where_value=where_sql, since_value=since_sql, order_value=order_sql, limit_value=limit_sql)
 
-    db = MyDatabase()
     thread_list_sql = db.execute(sql)
     if not thread_list_sql:
         return list()
@@ -210,7 +206,6 @@ def get_thread_list(id_value="", title="", forum="", user="", since="", limit=-1
 
 def get_user_dict(email):
     sql = """SELECT user, email, name, username, isAnonymous, about FROM User WHERE email = %(email)s;"""
-    db = MyDatabase()
     user_list_sql = db.execute(sql, {'email': email})
     if not user_list_sql:
         return dict()
@@ -232,31 +227,26 @@ def get_user_dict(email):
 
 def inc_posts_for_thread(thread_id):
     sql = """UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;"""
-    db = MyDatabase()
     db.execute(sql, {'thread': thread_id}, post=True)
 
 
 def dec_posts_for_thread(thread_id):
     sql = """UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;"""
-    db = MyDatabase()
     db.execute(sql, {'thread': thread_id}, post=True)
 
 
 def remove_post(post_id):
     sql = """UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;"""
-    db = MyDatabase()
     db.execute(sql, {'post': post_id}, True)
 
 
 def restore_post(post_id):
     sql = """UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;"""
-    db = MyDatabase()
     db.execute(sql, {'post': post_id}, True)
 
 
 def get_followers_list(email):
     sql = """SELECT follower FROM Follower WHERE following = %(following)s;"""
-    db = MyDatabase()
     followers_list_sql = db.execute(sql, {'following': email})
     if not followers_list_sql:
         return list()
@@ -266,7 +256,6 @@ def get_followers_list(email):
 
 def get_following_list(email):
     sql = """SELECT following FROM Follower WHERE follower = %(follower)s;"""
-    db = MyDatabase()
     following_list = db.execute(sql, {'follower': email})
     if not following_list:
         return list()
@@ -276,7 +265,6 @@ def get_following_list(email):
 
 def get_subscribed_threads_list(email):
     sql = """SELECT thread FROM Subscription WHERE subscriber = %(subscriber)s;"""
-    db = MyDatabase()
     subscriptions_list = db.execute(sql, {'subscriber': email})
     result = list()
     for thread in subscriptions_list:

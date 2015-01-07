@@ -76,3 +76,29 @@ TRUNCATE TABLE `tp_subd`.`Subscription`;
 
 
 DROP TABLE Forum, Post, Subscription, Thread, User, Follower;
+
+Индексы:
+Post
+(forum)
+(thread)
+(user, date) UNIQUE
++ date
+
+Forum
+(short_name) UNIQUE
+
+User
+(email) UNIQUE
+
+Thread
+(title) UNIQUE
+(forum)
+(user)
++ date
+
+Subscription
+(subscriber)
+
+Follower
+(following)
+(follower)
