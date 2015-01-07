@@ -104,12 +104,12 @@ def update_profile():
     request_body = request.json
 
     about = try_encode(request_body.get('about'))
-    user = try_encode(request_body.get('user'))
+    email = try_encode(request_body.get('user'))
     name = try_encode(request_body.get('name'))
 
-    args = {'about': about, 'name': name, 'email': user}
+    args = {'about': about, 'name': name, 'email': email}
     db.execute("""UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;""", args, True)
-    return json.dumps({"code": 0, "response": get_user_dict(user)}, indent=4)
+    return json.dumps({"code": 0, "response": get_user_dict(email)}, indent=4)
 
 
 @module.route("/listFollowers/", methods=["GET"])
@@ -163,8 +163,6 @@ def list_followers_method(is_following):
 
     user_list_sql = db.execute(sql, {'email': email})
     if not user_list_sql:
-        return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
-    elif not user_list_sql[0]:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
     user_list = list()

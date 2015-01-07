@@ -1,31 +1,30 @@
 import MySQLdb
 
+DB_HOST = 'localhost'
+DB_USER = 'subd_user'
+DB_DATABASE = 'tp_subd'
+# DB_DATABASE = 'tp_subd2'
+
 
 class MyDatabase:
     def __init__(self):
-        # self.connection = None
-        #     self.cursor = None
-        # self.connection, self.cursor = self.init_connection_and_cursor()
-        pass
+        self.connection = None
+        self.cursor = None
 
     def execute(self, sql, args=(), post=False):
-        # self.connection, self.cursor = self.init_connection_and_cursor()
-        connection, cursor = self.init_connection_and_cursor()
-        cursor.execute(sql, args)
+        self.cursor.execute(sql, args)
         if post:
-            connection.commit()
-            connection.close()
-            return cursor.lastrowid
+            self.connection.commit()
+            return self.cursor.lastrowid
 
-        connection.close()
-        return cursor.fetchall()
+        return self.cursor.fetchall()
 
-    @staticmethod
-    def init_connection_and_cursor():
-        # connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd", use_unicode=1, charset='utf8')
-        connection = MySQLdb.connect(host="localhost", user="subd_user", db="tp_subd2", use_unicode=1, charset='utf8')
-        cursor = connection.cursor()
-        return connection, cursor
+    def close_connections(self):
+        self.connection.close()
+
+    def init_connection_and_cursor(self):
+        self.connection = MySQLdb.connect(host=DB_HOST, user=DB_USER, db=DB_DATABASE, use_unicode=1, charset='utf8')
+        self.cursor = self.connection.cursor()
 
 
 db = MyDatabase()

@@ -172,11 +172,11 @@ def update():
 
     message = request_body.get('message')
     slug = request_body.get('slug')
-    thread = request_body.get('thread')
+    thread_id = request_body.get('thread')
 
     db.execute("""UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;""",
-               {'message': message, 'slug': slug, 'thread': thread}, True)
-    return json.dumps({"code": 0, "response": get_thread_by_id(thread)}, indent=4)
+               {'message': message, 'slug': slug, 'thread': thread_id}, True)
+    return json.dumps({"code": 0, "response": get_thread_by_id(thread_id)}, indent=4)
 
 
 @module.route("/subscribe/", methods=["POST"])
@@ -218,5 +218,4 @@ def vote():
     else:
         db.execute("""UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;""",
                    {'thread': thread_id}, True)
-
     return json.dumps({"code": 0, "response": get_thread_by_id(thread_id)}, indent=4)
