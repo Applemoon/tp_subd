@@ -174,9 +174,8 @@ def list_users():
     order_sql = """ORDER BY User.name {}""".format(order)
 
     sql = """SELECT User.user, User.email, User.name, User.username, User.isAnonymous, User.about FROM User \
-        JOIN Post ON Post.user = User.email \
-        WHERE Post.forum = %(forum)s {snc_sql} GROUP BY User.user {ord_sql} {lim_sql};""".format(
-        snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
+        WHERE User.email IN (SELECT DISTINCT user FROM Post WHERE forum = %(forum)s) {snc_sql} {ord_sql} \
+        {lim_sql};""".format(snc_sql=since_id_sql, lim_sql=limit_sql, ord_sql=order_sql)
 
     user_list_sql = db.execute(sql, {'forum': qs.get('forum')})
 

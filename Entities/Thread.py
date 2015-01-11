@@ -4,7 +4,7 @@ from flask import Blueprint, request
 
 from Entities.MyDatabase import db
 from common import get_json, get_thread_list, try_encode, get_forum_dict, get_user_dict, get_post_list, remove_post, \
-    restore_post, str_to_json, get_thread_by_id
+    restore_post, str_to_json, get_thread_by_id, MYSQL_DUPLICATE_ENTITY_ERROR
 
 module = Blueprint('thread', __name__, url_prefix='/db/api/thread')
 
@@ -195,8 +195,12 @@ def subscribe_method(unsubscribe_value=False):
     user = request_body.get('user')
     thread = request_body.get('thread')
     if not unsubscribe_value:
-        db.execute("""INSERT INTO Subscription (subscriber, thread) VALUES (%(subscriber)s, %(thread)s);""",
-                   {'subscriber': user, 'thread': thread}, True)
+        try:
+            db.execute("""INSERT INTO Subscription (subscriber, thread) VALUES (%(subscriber)s, %(thread)s);""",
+                       {'subscriber': user, 'thread': thread}, True)
+        except MySQLdb.IntegrityError, message:
+            if message[0] == MYSQL_DUPLICATE_ENTITY_ERROR:
+                print "Already subscribed"
     else:
         db.execute("""DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;""",
                    {'subscriber': user, 'thread': thread}, True)

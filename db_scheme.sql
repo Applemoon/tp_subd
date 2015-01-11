@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
+DROP TABLE Forum, Post, Subscription, Thread, User, Follower;
+
+CREATE TABLE IF NOT EXISTS `User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id
 	`email` VARCHAR(45) NOT NULL, -- user email
 	`name` VARCHAR(45) NULL, -- user name
@@ -9,12 +11,12 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`User` (
 	UNIQUE KEY (`email`)
 ) DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Follower` (
+CREATE TABLE IF NOT EXISTS `Follower` (
 	`follower` VARCHAR(45) NOT NULL, -- follower email
 	`following` VARCHAR(45) NOT NULL -- following email
 ) DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Forum` (
+CREATE TABLE IF NOT EXISTS `Forum` (
 	`forum` INT NOT NULL AUTO_INCREMENT, -- forum id
 	`name` VARCHAR(45) NOT NULL, -- forum full name
 	`short_name` VARCHAR(45) NOT NULL, -- forum short name
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Forum` (
 	UNIQUE KEY (`short_name`)
 ) DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
+CREATE TABLE IF NOT EXISTS `Thread` (
 	`thread` INT NOT NULL AUTO_INCREMENT, -- thread id
 	`title` VARCHAR(45) NOT NULL, -- thread title
 	`user` VARCHAR(45) NOT NULL, -- founder email
@@ -42,12 +44,13 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Thread` (
 	UNIQUE KEY (`title`)
 ) DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Subscription` (
+CREATE TABLE IF NOT EXISTS `Subscription` (
 	`subscriber` VARCHAR(45) NOT NULL, -- subscriber email
-	`thread` INT NOT NULL -- thread id
+	`thread` INT NOT NULL, -- thread id
+	PRIMARY KEY (`subscriber`, `thread`)
 ) DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
+CREATE TABLE IF NOT EXISTS `Post` (
 	`post` INT NOT NULL AUTO_INCREMENT, -- post id
 	`user` VARCHAR(45) NOT NULL, -- author email
 	`thread` INT NOT NULL, -- thread id
@@ -64,41 +67,42 @@ CREATE TABLE IF NOT EXISTS `tp_subd`.`Post` (
 	`isHighlighted` BOOLEAN NOT NULL DEFAULT 0,
 	`isApproved` BOOLEAN NOT NULL DEFAULT 0,
 	PRIMARY KEY (`post`),
-	UNIQUE KEY (`user`, `date`)
+	UNIQUE KEY `user_date` (`user`, `date`)
 ) DEFAULT CHARSET=utf8;
 
-TRUNCATE TABLE `tp_subd`.`Forum`;
 TRUNCATE TABLE `tp_subd`.`User`;
-TRUNCATE TABLE `tp_subd`.`Post`;
-TRUNCATE TABLE `tp_subd`.`Thread`;
 TRUNCATE TABLE `tp_subd`.`Follower`;
+TRUNCATE TABLE `tp_subd`.`Forum`;
+TRUNCATE TABLE `tp_subd`.`Thread`;
 TRUNCATE TABLE `tp_subd`.`Subscription`;
-
-
-DROP TABLE Forum, Post, Subscription, Thread, User, Follower;
-
-Индексы:
-Post
-(forum)
-(thread)
-(user, date) UNIQUE
-+ date
-
-Forum
-(short_name) UNIQUE
+TRUNCATE TABLE `tp_subd`.`Post`;
 
 User
-(email) UNIQUE
-
-Thread
-(title) UNIQUE
-(forum)
-(user)
-+ date
-
-Subscription
-(subscriber)
+CREATE UNIQUE INDEX email ON User (email); -- используется, задан в CREATE TABLE
+CREATE UNIQUE INDEX name_email ON User (name, email); -- ???
+CREATE UNIQUE INDEX email_name ON User (email, name); -- ???
 
 Follower
-(following)
-(follower)
+CREATE UNIQUE INDEX 'PRIMARY' ON Follower (follower, following); -- используется, задан в CREATE TABLE
+CREATE UNIQUE INDEX fing_fer ON Follower (following, follower); -- ???
+
+Forum
+CREATE UNIQUE INDEX 'PRIMARY' ON Forum (forum); -- задан в CREATE TABLE
+CREATE UNIQUE INDEX short_name ON Forum (short_name); -- используется, задан в CREATE TABLE
+
+Thread
+CREATE UNIQUE INDEX 'PRIMARY' ON Thread (thread); -- используется, задан в CREATE TABLE
+CREATE UNIQUE INDEX title ON Thread (title); -- задан в CREATE TABLE, ???
+CREATE INDEX forum ON Thread (forum); -- ???
+CREATE INDEX user ON Thread (user); -- используется
+
+Subscription
+CREATE UNIQUE INDEX 'PRIMARY' ON Subscription (subscriber, thread); -- используется, задан в CREATE TABLE
+
+Post
+CREATE UNIQUE INDEX 'PRIMARY' ON Post (post); -- используется, задан в CREATE TABLE
+CREATE UNIQUE INDEX user_date ON Post (user, date); -- ???, задан в CREATE TABLE
+CREATE INDEX forum ON Post (forum); -- используется
+CREATE INDEX user ON Post (user); -- используется, можно +date
+CREATE INDEX thread_date ON Post (thread, date); -- используется
+CREATE INDEX user_date ON Post (user,date); -- используется

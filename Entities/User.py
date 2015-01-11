@@ -30,8 +30,7 @@ def create():
     try:
         db.execute(sql, args, True)
     except MySQLdb.IntegrityError, message:
-        error_code = message[0]
-        if error_code == MYSQL_DUPLICATE_ENTITY_ERROR:
+        if message[0] == MYSQL_DUPLICATE_ENTITY_ERROR:
             return json.dumps({"code": 5,
                                "response": "This user already exists"}, indent=4)
         return json.dumps({"code": 4,
