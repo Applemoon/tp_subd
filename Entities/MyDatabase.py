@@ -18,7 +18,11 @@ class MyDatabase:
     def execute(self, sql, args=(), post=False):
         # tm = current_milli_time()
 
+        # try:
         self.cursor.execute(sql, args)
+        # except Exception as e:
+        #     print "Error %d: %s" % (e.args[0], e.args[1])
+
         if post:
             self.connection.commit()
             # tm = current_milli_time() - tm

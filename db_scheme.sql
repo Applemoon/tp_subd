@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS `User` (
 	`isAnonymous` BOOLEAN NOT NULL DEFAULT 0,
 	`about` TEXT NULL,
 	PRIMARY KEY (`user`),
-	UNIQUE KEY (`email`)
+	UNIQUE KEY (`email`),
+	UNIQUE KEY name_email (name, email)
 ) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `Follower` (
@@ -41,7 +42,8 @@ CREATE TABLE IF NOT EXISTS `Thread` (
 	`points` INT NOT NULL DEFAULT 0,
 	`posts` INT NOT NULL DEFAULT 0,
 	PRIMARY KEY (`thread`),
-	UNIQUE KEY (`title`)
+	UNIQUE KEY (`title`),
+	KEY (user)
 ) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `Subscription` (
@@ -67,7 +69,9 @@ CREATE TABLE IF NOT EXISTS `Post` (
 	`isHighlighted` BOOLEAN NOT NULL DEFAULT 0,
 	`isApproved` BOOLEAN NOT NULL DEFAULT 0,
 	PRIMARY KEY (`post`),
-	UNIQUE KEY `user_date` (`user`, `date`)
+	UNIQUE KEY `user_date` (`user`, `date`),
+	KEY (`forum`),
+	KEY `thread_date` (`thread`, `date`)
 ) DEFAULT CHARSET=utf8;
 
 TRUNCATE TABLE `tp_subd`.`User`;
@@ -79,7 +83,7 @@ TRUNCATE TABLE `tp_subd`.`Post`;
 
 User
 CREATE UNIQUE INDEX email ON User (email); -- используется, задан в CREATE TABLE
-CREATE UNIQUE INDEX name_email ON User (name, email); -- ???
+CREATE UNIQUE INDEX name_email ON User (name, email); -- используется, задан в CREATE TABLE
 CREATE UNIQUE INDEX email_name ON User (email, name); -- ???
 
 Follower
@@ -102,7 +106,7 @@ CREATE UNIQUE INDEX 'PRIMARY' ON Subscription (subscriber, thread); -- испо�
 Post
 CREATE UNIQUE INDEX 'PRIMARY' ON Post (post); -- используется, задан в CREATE TABLE
 CREATE UNIQUE INDEX user_date ON Post (user, date); -- ???, задан в CREATE TABLE
-CREATE INDEX forum ON Post (forum); -- используется
-CREATE INDEX user ON Post (user); -- используется, можно +date
-CREATE INDEX thread_date ON Post (thread, date); -- используется
-CREATE INDEX user_date ON Post (user,date); -- используется
+CREATE INDEX forum ON Post (forum); -- используется, задан в CREATE TABLE
+CREATE INDEX user ON Post (user); -- ???
+CREATE INDEX thread_date ON Post (thread, date); -- используется, задан в CREATE TABLE
+CREATE INDEX user_date ON Post (user,date); -- используется, задан в CREATE TABLE
