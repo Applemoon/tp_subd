@@ -4,7 +4,6 @@ import MySQLdb
 DB_HOST = 'localhost'
 DB_USER = 'subd_user'
 DB_DATABASE = 'tp_subd'
-# DB_DATABASE = 'tp_subd2'
 
 # current_milli_time = lambda: int(round(time.time() * 1000))
 

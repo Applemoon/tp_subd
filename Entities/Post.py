@@ -67,17 +67,23 @@ def create():
     else:
         is_deleted = 0
 
+    print 1
     sql = """INSERT INTO Post (user, thread, forum, message, parent, date, \
         isSpam, isEdited, isDeleted, isHighlighted, isApproved) VALUES \
         (%(user)s, %(thread)s, %(forum)s, %(message)s, %(parent)s, %(date)s, \
         %(isSpam)s, %(isEdited)s, %(isDeleted)s, %(isHighlighted)s, %(isApproved)s);"""
+    print 2
     args = {'user': user, 'thread': thread, 'forum': forum, 'message': message, 'parent': parent, 'date': date,
             'isSpam': is_spam, 'isEdited': is_edited, 'isDeleted': is_deleted, 'isHighlighted': is_highlighted,
             'isApproved': is_approved}
+    print 3
 
     post_id = db.execute(sql, args, True)
+    print 4
     post = get_post_by_id(post_id)
+    print 5
     inc_posts_for_thread(thread)
+    print 6
     if not post:
         return json.dumps({"code": 1, "response": "Empty set"}, indent=4)
 
